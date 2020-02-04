@@ -1,20 +1,17 @@
 elifePipeline {
-    def commit
-    def schemaVersion
     def tag
     DockerImage image
 
     node('containers-jenkins-plugin') {
         stage 'Checkout', {
             checkout scm
-            commit = elifeGitRevision()
+            def commit = elifeGitRevision()
             def commitShort = commit.substring(0, 8)
-            schemaVersion = params.SCHEMA_VERSION ?: "master"
-            tag = "${commitShort}-${schemaVersion}"
+            tag = "${commitShort}-${params.SCHEMA_VERSION}"
         }
 
         stage 'Build', {
-            dockerBuild('basex-validator', commit, null, 'elifesciences', ['schema_version':schemaVersion])
+            dockerBuild('basex-validator', tag, null, 'elifesciences', ['schema_version':params.SCHEMA_VERSION])
         }
 
     //    stage 'Tests', {
