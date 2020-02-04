@@ -1,6 +1,5 @@
 elifePipeline {
     def commit
-    def commitShort
     def schemaVersion
     def tag
     DockerImage image
@@ -9,16 +8,13 @@ elifePipeline {
         stage 'Checkout', {
             checkout scm
             commit = elifeGitRevision()
-            commitShort = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-            schemaVersion = params.'SCHEMA_VERSION' ?: "master"
+            def commitShort = commit.substring(0, 8)
+            schemaVersion = params.SCHEMA_VERSION ?: "master"
             tag = "${commitShort}-${schemaVersion}"
         }
 
         stage 'Build', {
-            sh "docker-wait-daemon"
-            def imageName = "elifesciences/basex-validator"
-            def dockerfile = 'Dockerfile'
-            sh "docker build --pull -f ${dockerfile} -t ${imageName}:${tag} . --build-arg schema_version=${schemaVersion}"
+            dockerBuild('basex-validator', commit, null, 'elifesciences', ['schema_version':schemaVersion])
         }
 
     //    stage 'Tests', {
