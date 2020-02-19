@@ -89,7 +89,7 @@ declare function e:svrl2json($svrl){
                 '{',
                 ('"path": "'||$error/@location/string()||'",'),
                 ('"type": "'||$error/@role/string()||'",'),
-                ('"message": "'||replace(normalize-space($error/*:text[1]/data()),'"','\\"')||'"'),
+                ('"message": "'||e:json-escape($error/*:text[1]/data())||'"'),
                 '}'
               )
           ,','),
