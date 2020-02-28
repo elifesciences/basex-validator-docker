@@ -14,7 +14,7 @@ function e:validate-pre($xml)
 {
   let $schema := doc('./schematron/pre-JATS-schematron.sch')
   let $sch := schematron:compile(e:update-refs($schema,$schema/base-uri()))
-  let $svrl := schematron:validate($xml, $sch)
+  let $svrl :=  e:validate($xml, $sch)
   
   return e:svrl2json($svrl)
   
@@ -30,7 +30,7 @@ function e:validate-final($xml)
 {
   let $schema := doc('./schematron/final-JATS-schematron.sch')
   let $sch := schematron:compile(e:update-refs($schema,$schema/base-uri()))
-  let $svrl := schematron:validate($xml, $sch)
+  let $svrl :=  e:validate($xml, $sch)
   
   return e:svrl2json($svrl)
   
@@ -145,6 +145,12 @@ declare function e:update-refs($schema,$path2schema){
   
 };
 
+declare function e:validate($xml,$schema){
+  
+  try {schematron:validate($xml, $schema)}
+  (: Return psuedo-svrl to output error message for fatal xslt errors :)
+  catch * { <schematron-output><successful-report id="validator-broken" location="unknown" role="error"><text>{'Error [' || $err:code || ']: ' || $err:description}</text></successful-report></schematron-output>}
+};
 
 declare
 function e:template($div as element(div))
