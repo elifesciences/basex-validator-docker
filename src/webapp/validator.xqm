@@ -130,14 +130,13 @@ return json:parse($json)
 declare function e:svrl2json-final($xml,$svrl){
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
-  
   let $glencoe-errors := 
   string-join(
            if ($glencoe//*:error) then ('{"path": "unknown", "type": "error", "message": "There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct."}')
          else (
            for $vid in $xml//*:media[@mimetype="video"]
            let $id := $vid/@id
-           return if ($glencoe//*:json/*[local-name()=$id and *:video__id and ends-with(*:solo__href,$id)]) then ()
+           return if ($glencoe//*:json/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
            else concat(
                 '{',
                 ('"path": "unkown",'),
@@ -146,12 +145,7 @@ declare function e:svrl2json-final($xml,$svrl){
                 '}'
               )
          ),',')
-  
-  let $errors :=
-      concat(
-         '"errors": [', 
-         if ($glencoe-errors='') then () else concat($glencoe-errors,','),
-         string-join(
+  let $sch-errors := string-join(
          for $error in $svrl//*[@role="error"]
          return concat(
                 '{',
@@ -160,7 +154,15 @@ declare function e:svrl2json-final($xml,$svrl){
                 ('"message": "'||e:json-escape($error/*:text[1]/data())||'"'),
                 '}'
               )
-          ,','),
+          ,',')
+  
+  let $errors :=
+      concat(
+         '"errors": [', 
+          string-join(
+            (if ($glencoe-errors='') then () else $glencoe-errors,
+             if ($sch-errors='') then () else $sch-errors)
+            ,','),
         ']'
       )
 let $warnings := 
