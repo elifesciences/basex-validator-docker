@@ -32,7 +32,10 @@ function e:validate-final($xml)
   let $sch := schematron:compile(e:update-refs($schema,$schema/base-uri()))
   let $svrl :=  e:validate($xml, $sch)
   
-  return e:svrl2json($svrl)
+  return 
+  (: Extra check for Glencoe Metadata :)
+  if ($xml//*:media[@mimetype="video"]) then (e:svrl2json-final($xml,$svrl))
+  else e:svrl2json($svrl)
   
 };
 
@@ -123,6 +126,71 @@ let $json :=
 return json:parse($json)
 };
 
+(: Contains check for Glencoe metadata :)
+declare function e:svrl2json-final($xml,$svrl){
+  let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
+  let $glencoe := e:get-glencoe($doi)
+  
+  let $glencoe-errors := 
+  string-join(
+           if ($glencoe//*:error) then ('{"path": "unknown", "type": "error", "message": "There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct."}')
+         else (
+           for $vid in $xml//*:media[@mimetype="video"]
+           let $id := $vid/@id
+           return if ($glencoe//*:json/*[local-name()=$id and *:video__id and ends-with(*:solo__href,$id)]) then ()
+           else concat(
+                '{',
+                ('"path": "unkown",'),
+                ('"type": "error",'),
+                ('"message": "There is no metadata in Glencoe for the video with id '||concat("'",$id,"'")||'."'),
+                '}'
+              )
+         ),',')
+  
+  let $errors :=
+      concat(
+         '"errors": [', 
+         if ($glencoe-errors='') then () else concat($glencoe-errors,','),
+         string-join(
+         for $error in $svrl//*[@role="error"]
+         return concat(
+                '{',
+                ('"path": "'||$error/@location/string()||'",'),
+                ('"type": "'||$error/@role/string()||'",'),
+                ('"message": "'||e:json-escape($error/*:text[1]/data())||'"'),
+                '}'
+              )
+          ,','),
+        ']'
+      )
+let $warnings := 
+     concat(
+         '"warnings": [',
+         string-join(
+         for $warn in $svrl//*[@role=('info','warning','warn')]
+         return concat(
+                '{',
+                ('"path": "'||$warn/@location/string()||'",'),
+                ('"type": "'||$warn/@role/string()||'",'),
+                ('"message": "'||e:json-escape($warn/*:text[1]/data())||'"'),
+                '}'
+              )
+          ,','),
+        ']'
+      )
+      
+let $json :=  
+    concat(
+      '{
+        "results": {',
+      $errors,
+      ',',
+      $warnings,
+      '} }'
+    )
+return json:parse($json)
+};
+
 declare function e:json-escape($string){
   normalize-space(replace(replace($string,'\\','\\\\'),'"','\\"'))
 };
@@ -143,6 +211,14 @@ declare function e:update-refs($schema,$path2schema){
                 )
                 return $copy
   
+};
+
+declare function e:get-glencoe($doi){
+  let $glencoe := fetch:text(('https://movie-usa.glencoesoftware.com/metadata/'||$doi))
+  return
+  try {json:parse($glencoe)}
+  (: Return error for unparsable glencoe metadata  :)
+  catch * { json:parse('{"error": "Not found"}') }
 };
 
 declare function e:validate($xml,$schema){
