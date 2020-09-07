@@ -92,7 +92,7 @@ declare function e:svrl2json($svrl){
                 '{',
                 ('"path": "'||$error/@location/string()||'",'),
                 ('"type": "'||$error/@role/string()||'",'),
-                ('"message": "'||e:json-escape($error/*:text[1]/data())||'"'),
+                ('"message": "'||e:get-message($error)||'"'),
                 '}'
               )
           ,','),
@@ -107,7 +107,7 @@ let $warnings :=
                 '{',
                 ('"path": "'||$warn/@location/string()||'",'),
                 ('"type": "'||$warn/@role/string()||'",'),
-                ('"message": "'||e:json-escape($warn/*:text[1]/data())||'"'),
+                ('"message": "'||e:get-message($warn)||'"'),
                 '}'
               )
           ,','),
@@ -151,7 +151,7 @@ declare function e:svrl2json-final($xml,$svrl){
                 '{',
                 ('"path": "'||$error/@location/string()||'",'),
                 ('"type": "'||$error/@role/string()||'",'),
-                ('"message": "'||e:json-escape($error/*:text[1]/data())||'"'),
+                ('"message": "'||e:get-message($error)||'"'),
                 '}'
               )
           ,',')
@@ -174,7 +174,7 @@ let $warnings :=
                 '{',
                 ('"path": "'||$warn/@location/string()||'",'),
                 ('"type": "'||$warn/@role/string()||'",'),
-                ('"message": "'||e:json-escape($warn/*:text[1]/data())||'"'),
+                ('"message": "'||e:get-message($warn)||'"'),
                 '}'
               )
           ,','),
@@ -195,6 +195,11 @@ return json:parse($json)
 
 declare function e:json-escape($string){
   normalize-space(replace(replace($string,'\\','\\\\'),'"','\\"'))
+};
+
+declare function e:get-message($node){
+  if ($node[@see]) then (e:json-escape(data($node))||' <a href=\"'||$node/@see||'\">'||$node/@see||'</a>')
+  else e:json-escape(data($node))
 };
 
 declare function e:update-refs($schema,$path2schema){
