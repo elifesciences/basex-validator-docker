@@ -198,7 +198,7 @@ declare function e:json-escape($string){
 };
 
 declare function e:get-message($node){
-  if ($node[@see]) then (e:json-escape(data($node))||' <a href=\"'||$node/@see||'\">'||$node/@see||'</a>')
+  if ($node[@see]) then e:json-escape((data($node)||' '||$node/@see))
   else e:json-escape(data($node))
 };
 
