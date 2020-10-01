@@ -12,9 +12,8 @@ declare
   %output:method("json")
 function e:validate-pre($xml)
 {
-  let $schema := doc('./schematron/pre-JATS-schematron.sch')
-  let $sch := schematron:compile(e:update-refs($schema,$schema/base-uri()))
-  let $svrl :=  e:validate($xml, $sch)
+  let $xsl := doc('./schematron/pre-JATS-schematron.xsl')
+  let $svrl :=  xslt:transform($xml, $xsl)
   
   return e:svrl2json($svrl)
   
@@ -28,9 +27,8 @@ declare
   %output:method("json")
 function e:validate-final($xml)
 {
-  let $schema := doc('./schematron/final-JATS-schematron.sch')
-  let $sch := schematron:compile(e:update-refs($schema,$schema/base-uri()))
-  let $svrl :=  e:validate($xml, $sch)
+  let $xsl := doc('./schematron/final-JATS-schematron.xsl')
+  let $svrl :=  xslt:transform($xml, $xsl)
   
   return 
   (: Extra check for Glencoe Metadata :)
@@ -200,24 +198,6 @@ declare function e:json-escape($string){
 declare function e:get-message($node){
   if ($node[@see]) then e:json-escape((data($node)||' '||$node/@see))
   else e:json-escape(data($node))
-};
-
-declare function e:update-refs($schema,$path2schema){
-  let $filename := tokenize($path2schema,'/')[last()]
-  let $folder := substring-before($path2schema,$filename)
-  let $external-variables := distinct-values(
-                      for $x in $schema//*[@test[contains(.,'document(')]]
-                      let $variable := substring-before(substring-after($x/@test,'document($'),')')
-                      return $variable
-                    )
-  return
-  copy $copy := $schema
-                modify(
-                  for $x in $copy//*:let[@name=$external-variables]
-                  return replace value of node $x/@value with concat("'",$folder,replace($x/@value/string(),"'",''),"'")
-                )
-                return $copy
-  
 };
 
 declare function e:get-glencoe($doi){
