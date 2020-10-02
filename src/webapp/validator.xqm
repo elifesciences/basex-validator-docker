@@ -147,7 +147,7 @@ declare function e:svrl2json-final($xml,$svrl){
          else (
            for $vid in $xml//*:media[@mimetype="video"]
            let $id := $vid/@id
-           return if ($glencoe//*:json/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
+           return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
            else concat(
                 '{',
                 ('"path": "unkown",'),
