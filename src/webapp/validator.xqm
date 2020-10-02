@@ -19,6 +19,19 @@ function e:validate-pre($xml)
   
 };
 
+declare
+  %rest:path("/schematron/dl")
+  %rest:POST("{$xml}")
+  %input:text("xml","encoding=UTF-8")
+  %output:method("json")
+function e:validate-dl($xml)
+{
+  let $xsl := doc('./schematron/dl-schematron.xsl')
+  let $svrl :=  xslt:transform($xml, $xsl)
+  
+ return e:svrl2json($svrl)
+  
+};
 
 declare
   %rest:path("/schematron/final")
@@ -201,11 +214,17 @@ declare function e:get-message($node){
 };
 
 declare function e:get-glencoe($doi){
-  let $glencoe := fetch:text(('https://movie-usa.glencoesoftware.com/metadata/'||$doi))
-  return
-  try {json:parse($glencoe)}
-  (: Return error for unparsable glencoe metadata  :)
+  try {
+    http:send-request(
+  <http:request method='get' href="{('https://movie-usa.glencoesoftware.com/metadata/'||$doi)}" timeout='2'>
+    <http:header name="From" value="production@elifesciences.org"/>
+    <http:header name="Referer" value="https://basex-validator--staging.elifesciences.org/schematron/final"/>
+    <http:header name="User-Agent" value="basex-validator"/>
+  </http:request>)//*:json}
+  
+  (: Return error for timeout :)
   catch * { json:parse('{"error": "Not found"}') }
+   
 };
 
 declare function e:validate($xml,$schema){
