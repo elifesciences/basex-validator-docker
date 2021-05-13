@@ -51,7 +51,7 @@ function e:upload()
 {
   let $div := 
   <div class="col-12">
-            <form id="form1" action="/schematron/pre-table" method="POST" enctype="multipart/form-data">
+            <form id="form1" method="POST" enctype="multipart/form-data" onSubmit="disableBtn()">
                 <div class="row justify-content-start">
                     <div class="form-group col-10">
                         <label for="InputFiles" class="col-md-2 control-label">Select file:</label>
@@ -59,9 +59,9 @@ function e:upload()
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-2">Choose Schematron</label>
-                    <input type="submit" value="Pre"/>
-                    <input type="submit" formaction="/schematron/final-table" value="Final"/>
+                    <label class="col-2">Schematron:</label>
+                    <button id="preBtn" class="btn btn-primary" onclick="addSpinner(event)" type="submit" formaction="/schematron/pre-table">Pre</button>
+                    <button id="finalBtn" class="btn btn-primary" onclick="addSpinner(event)" type="submit" formaction="/schematron/final-table">Final</button>
                 </div>
             </form>
         </div> 
@@ -248,10 +248,11 @@ declare function e:svrl2table-rows($svrl) as element(tr)*
   let $id-content := if ($x/@see) then <a href="{$x/@see/string()}" target="_blank">{$x/@id/string()}</a>
                   else $x/@id/string()
   return <tr>
-          <td>{$x/@role/string()}</td>
-          <td>{$id-content}</td>
-          <td class="breakable">{$x/@location/string()}</td>
-          <td>{data($x/*:text)}</td>
+          <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
+          <td class="align-middle">{$x/@role/string()}</td>
+          <td class="align-middle">{$id-content}</td>
+          <td class="breakable align-middle">{$x/@location/string()}</td>
+          <td class="align-middle">{data($x/*:text)}</td>
         </tr>
 };
 
@@ -261,20 +262,22 @@ declare function e:svrl2table-rows-final($xml,$svrl) as element(tr)*
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-rows := 
     if ($glencoe//*:error) then <tr>
-                                  <td>unknown</td>
-                                  <td>error</td>
-                                  <td class="breakable">unknown</td>
-                                  <td>There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
+                                  <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
+                                  <td class="align-middle">unknown</td>
+                                  <td class="align-middle">error</td>
+                                  <td class="breakable align-middle">unknown</td>
+                                  <td class="align-middle">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
                                 </tr>
     else (
            for $vid in $xml//*:media[@mimetype="video"]
            let $id := $vid/@id
            return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
            else <tr>
-                  <td>unknown</td>
-                  <td>error</td>
-                  <td class="breakable">unknown</td>
-                  <td>{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
+                  <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
+                  <td class="align-middle">unknown</td>
+                  <td class="align-middle">error</td>
+                  <td class="breakable align-middle">unknown</td>
+                  <td class="align-middle">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>
         )
    let $table-rows := e:svrl2table-rows($svrl)       
@@ -285,6 +288,7 @@ declare function e:table-template($table-rows) as element(table){
   <table id="result" class="table table-striped table-bordered" style="width:100%">
     <thead>
         <tr>
+            <th/>
             <th>Type</th>
             <th>ID</th>
             <th class="breakable">XPath</th>
@@ -312,6 +316,9 @@ as element(html)
         <style><![CDATA[.breakable {
         word-wrap: break-word;
         word-break: break-all;
+        }
+      .completed *{
+      color:#ccc7c7be;
     }]]></style>
         <title>Schematron Validator</title>
   </head>
@@ -335,15 +342,51 @@ as element(html)
             order: [],
             autoWidth: false,
             columnDefs: [
-              { "targets": 0, "width": "40px" },
-              { "targets": 1, "width": "98px" },
-              { "targets": 2, "width": "300px" },
-              { "targets": 3, "width": "500px" }
+              { "targets": 0, "width": "10px" },
+              { "targets": 1, "width": "40px" },
+              { "targets": 2, "width": "98px" },
+              { "targets": 3, "width": "290px" },
+              { "targets": 4, "width": "500px" }
             ],
             fixedColumns: true,
             autoWidth: false
         });
     });]]></script>
+    <script><![CDATA[function disableBtn(){
+          preBtn.setAttribute('disabled','');
+          finalBtn.setAttribute('disabled','');
+        };
+
+        function addSpinner(e){
+          let btn = e.target
+          let btnText = btn.innerHTML
+          btn.innerHTML = `<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> ${btnText}`
+        };
+        
+        function updateRow(e){
+          let checkbox = e.target;
+          if (checkbox.classList.contains("unticked")){
+              checkbox.classList.toggle("unticked");
+              let row = checkbox.parentNode.parentNode;
+              for (let i = 1; i < row.cells.length; i++){
+                let cell = row.cells[i]
+                let content = cell.innerHTML;
+                cell.innerHTML = `<del>${content}</del>`;
+                cell.classList.toggle("completed");
+              };
+          }
+          else {
+            checkbox.classList.toggle("unticked");
+            let row = checkbox.parentNode.parentNode;
+            for (let i = 1; i < row.cells.length; i++){
+                let cell = row.cells[i]
+                let del = cell.childNodes[0];
+                cell.innerHTML = del.innerHTML;
+                cell.classList.toggle("completed");
+            };
+          };
+        };   
+    ]]></script>
   </body>
 </html>
 };
