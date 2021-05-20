@@ -9,8 +9,8 @@ You can now build the container locally using the following command, which will 
 version of the schematron files from https://github.com/elifesciences/eLife-JATS-schematron
 
 ```
-docker build . --tag basex-validator
-docker run --rm --memory="1g" -p 1984:1984 -p 8984:8984 basex-validator
+docker build . -t basex-validator:local
+docker run --rm --memory="1g" -p 1984:1984 -p 8984:8984 basex-validator:local
 ```
 
 You can then interact with the service on port 8984 for example using cURL, for example...
