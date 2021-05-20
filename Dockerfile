@@ -1,4 +1,4 @@
-FROM alpine/git:latest as elifeSchematronFiles
+FROM alpine/git:v2.30.2 as elifeSchematronFiles
 ARG schema_version=master
 WORKDIR /tmp
 RUN git clone https://github.com/elifesciences/eLife-JATS-schematron .
