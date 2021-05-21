@@ -28,7 +28,7 @@ elifePipeline {
             }
 
             stage 'Publish to Dockerhub', {
-               image = DockerImage.elifesciences(this, 'basex-validator', tag)
+               image = DockerImage.elifesciences(this, 'basex-validator', 'latest')
                image.push()
                image.tag("${branch}-${commitShort}-${timestamp}").push()
                image.tag("${branch}-${commitShort}").push()
