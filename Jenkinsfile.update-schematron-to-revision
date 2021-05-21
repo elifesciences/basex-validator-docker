@@ -7,7 +7,7 @@ elifePipeline {
     node('containers-jenkins-plugin') {
         stage 'Checkout', {
             checkout scm
-            branchName = ${GIT_BRANCH}
+            branchName = env.BRANCH_NAME
             schemaVersion = params.schemaVersion ?: 'master'
         }
 
