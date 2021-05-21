@@ -1,0 +1,34 @@
+elifePipeline {
+    def tag
+    def schemaVersion
+    DockerImage image
+
+    node('containers-jenkins-plugin') {
+        stage 'Checkout', {
+            checkout scm
+            schemaVersion = params.schemaVersion ?: 'master'
+        }
+
+        stage 'Update Schematron', {
+            sh "cd eLife-JATS-schematron && git checkout ${schemaVersion} && cd .."
+        }
+
+        stage 'Build', {
+            dockerBuild('basex-validator', 'ci', null, 'elifesciences')
+        }
+
+        stage 'Smoke Tests', {
+            agent {
+                docker { image 'elifesciences/basex-validator:ci' }
+            }
+            sh "sleep 10"
+            sh "cd tests && ./smoke_tests_wsgi.sh && cd .."
+        }
+
+        stage 'Commit', {
+            sh "git add eLife-JATS-schematron"
+            elifeGitCommit("chore(release): update schematron to ${schemaVersion}")
+            sh "git push origin master"
+        }
+    }
+}
