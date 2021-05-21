@@ -8,28 +8,32 @@ elifePipeline {
         elifeMainlineOnly {
             stage 'Checkout', {
                 checkout scm
-                branch = ${GIT_BRANCH}
+                branch = env.BRANCH_NAME
                 commitShort = elifeGitRevision().substring(0, 8)
                 timestamp = sh(script: 'date --utc +%Y%m%d.%H%M', returnStdout: true).trim()
             }
 
             stage 'Build', {
-                dockerBuild('basex-validator', 'latest', null, 'elifesciences', ['schema_version': schemaVersion])
+                dockerBuild('basex-validator', 'latest', null, 'elifesciences')
             }
 
             stage 'Smoke Tests', {
-                agent {
-                    docker { image 'elifesciences/basex-validator:ci' }
+                try {
+                    sh "docker run -d --name 'basex-validator' --rm --memory='512m' -p 1984:1984 -p 8984:8984 elifesciences/basex-validator:latest"
+                    sh "sleep 10"
+                    sh "cd test && ./smoke_tests_wsgi.sh && cd .."
+                } finally {
+                    sh "docker stop 'basex-validator'"
                 }
-                sh "sleep 10"
-                sh "cd tests && ./smoke_tests_wsgi.sh && cd .."
             }
 
             stage 'Publish', {
-                image = DockerImage.elifesciences(this, 'basex-validator', tag)
-                image.push()
-                image.tag("${branch}-${commitShort}-${timestamp}").push()
-                image.tag("${branch}-${commitShort}").push()
+                sh "echo '${branch}-${commitShort}-${timestamp}'"
+                sh "echo '${branch}-${commitShort}'"
+//                image = DockerImage.elifesciences(this, 'basex-validator', tag)
+//                image.push()
+//                image.tag("${branch}-${commitShort}-${timestamp}").push()
+//                image.tag("${branch}-${commitShort}").push()
             }
         }
     }
