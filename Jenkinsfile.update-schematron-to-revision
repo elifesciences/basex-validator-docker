@@ -7,7 +7,7 @@ elifePipeline {
     node('containers-jenkins-plugin') {
         stage 'Checkout', {
             checkout scm
-            branchName = env.BRANCH_NAME
+            branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
             schemaVersion = params.schemaVersion ?: 'master'
         }
 
@@ -32,8 +32,7 @@ elifePipeline {
         stage 'Commit', {
             sh "git add eLife-JATS-schematron"
             elifeGitCommit("chore(release): updated schematron to revision ${schemaVersion}")
-            sh "echo 'git push origin ${branchName}'"
-            //sh "git push origin ${branchName}"
+            sh "git push origin ${branchName}"
         }
     }
 }

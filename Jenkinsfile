@@ -8,7 +8,7 @@ elifePipeline {
         elifeMainlineOnly {
             stage 'Checkout', {
                 checkout scm
-                branch = env.BRANCH_NAME
+                branch = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                 commitShort = elifeGitRevision().substring(0, 8)
                 timestamp = sh(script: 'date --utc +%Y%m%d.%H%M', returnStdout: true).trim()
             }
@@ -27,13 +27,11 @@ elifePipeline {
                 }
             }
 
-            stage 'Publish', {
-                sh "echo '${branch}-${commitShort}-${timestamp}'"
-                sh "echo '${branch}-${commitShort}'"
-//                image = DockerImage.elifesciences(this, 'basex-validator', tag)
-//                image.push()
-//                image.tag("${branch}-${commitShort}-${timestamp}").push()
-//                image.tag("${branch}-${commitShort}").push()
+            stage 'Publish to Dockerhub', {
+               image = DockerImage.elifesciences(this, 'basex-validator', tag)
+               image.push()
+               image.tag("${branch}-${commitShort}-${timestamp}").push()
+               image.tag("${branch}-${commitShort}").push()
             }
         }
     }
