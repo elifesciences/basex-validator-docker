@@ -1,11 +1,13 @@
 elifePipeline {
     def tag
+    def branchName
     def schemaVersion
     DockerImage image
 
     node('containers-jenkins-plugin') {
         stage 'Checkout', {
             checkout scm
+            branchName = ${GIT_BRANCH}
             schemaVersion = params.schemaVersion ?: 'master'
         }
 
@@ -27,7 +29,7 @@ elifePipeline {
 
         stage 'Commit', {
             sh "git add eLife-JATS-schematron"
-            elifeGitCommit("chore(release): update schematron to ${schemaVersion}")
+            elifeGitCommit("chore(release): updated schematron to revision ${schemaVersion}")
             sh "git push origin master"
         }
     }
