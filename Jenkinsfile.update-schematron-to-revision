@@ -20,11 +20,13 @@ elifePipeline {
         }
 
         stage 'Smoke Tests', {
-            agent {
-                docker { image 'elifesciences/basex-validator:ci' }
+            try {
+                sh "docker run -d --name 'basex-validator' --rm --memory='512m' -p 1984:1984 -p 8984:8984 elifesciences/basex-validator:ci"
+                sh "sleep 10"
+                sh "cd test && ./smoke_tests_wsgi.sh && cd .."
+            } finally {
+                sh "docker stop 'basex-validator'"
             }
-            sh "sleep 10"
-            sh "cd tests && ./smoke_tests_wsgi.sh && cd .."
         }
 
         stage 'Commit', {
