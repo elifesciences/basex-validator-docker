@@ -8,9 +8,8 @@ elifePipeline {
         elifeMainlineOnly {
             stage 'Checkout', {
                 checkout scm
-                def commit = elifeGitRevision()
                 branch = ${GIT_BRANCH}
-                commitShort = commit.substring(0, 8)
+                commitShort = elifeGitRevision().substring(0, 8)
                 timestamp = sh(script: 'date --utc +%Y%m%d.%H%M', returnStdout: true).trim()
             }
 
