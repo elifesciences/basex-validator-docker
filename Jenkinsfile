@@ -1,35 +1,36 @@
 elifePipeline {
-    def tag
-    def schemaVersion
+    def branch
+    def commitShort
+    def timestamp
     DockerImage image
 
     node('containers-jenkins-plugin') {
-        stage 'Checkout', {
-            checkout scm
-            def commit = elifeGitRevision()
-            def commitShort = commit.substring(0, 8)
-            schemaVersion = params.schemaVersion ?: 'master'
-            tag = "${commitShort}-${schemaVersion}"
-        }
-
-        stage 'Build', {
-            dockerBuild('basex-validator', tag, null, 'elifesciences', ['schema_version': schemaVersion])
-        }
-
-    //    stage 'Tests', {
-    //         dockerComposeProjectTests('digests', commit, ['/srv/digests/build/*.xml'])
-    //         dockerComposeSmokeTests(commit, [
-    //             'scripts': [
-    //                 'wsgi': './smoke_tests_wsgi.sh',
-    //             ],
-    //         ])
-    //    }
-
         elifeMainlineOnly {
+            stage 'Checkout', {
+                checkout scm
+                def commit = elifeGitRevision()
+                branch = ${GIT_BRANCH}
+                commitShort = commit.substring(0, 8)
+                timestamp = sh(script: 'date --utc +%Y%m%d.%H%M', returnStdout: true).trim()
+            }
+
+            stage 'Build', {
+                dockerBuild('basex-validator', 'latest', null, 'elifesciences', ['schema_version': schemaVersion])
+            }
+
+            stage 'Smoke Tests', {
+                agent {
+                    docker { image 'elifesciences/basex-validator:ci' }
+                }
+                sh "sleep 10"
+                sh "cd tests && ./smoke_tests_wsgi.sh && cd .."
+            }
+
             stage 'Publish', {
                 image = DockerImage.elifesciences(this, 'basex-validator', tag)
                 image.push()
-                image.tag('latest').push()
+                image.tag("${branch}-${commitShort}-${timestamp}").push()
+                image.tag("${branch}-${commitShort}").push()
             }
         }
     }
