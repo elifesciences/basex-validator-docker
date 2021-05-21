@@ -30,7 +30,7 @@ elifePipeline {
         stage 'Commit', {
             sh "git add eLife-JATS-schematron"
             elifeGitCommit("chore(release): updated schematron to revision ${schemaVersion}")
-            sh "git push origin master"
+            sh "git push origin ${branchName}"
         }
     }
 }
