@@ -10,6 +10,13 @@ elifePipeline {
             branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
             schemaVersion = params.schemaVersion ?: 'master'
         }
+        
+        stage 'Validate new revision', {
+            def currentRef = sh(script: 'cd eLife-JATS-schematron && git rev-parse HEAD && cd ..', returnStdout: true).trim()
+            if( currentRef == schemaVersion ) {
+                error("Already using schematron revision ${schemaVersion}")
+            }
+        }
 
         stage 'Update Schematron', {
             sh "cd eLife-JATS-schematron && git checkout ${schemaVersion} && cd .."
