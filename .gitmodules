@@ -1,0 +1,3 @@
+[submodule "eLife-JATS-schematron"]
+	path = eLife-JATS-schematron
+	url = https://github.com/elifesciences/eLife-JATS-schematron

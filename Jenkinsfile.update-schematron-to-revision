@@ -1,0 +1,45 @@
+elifePipeline {
+    def tag
+    def branchName
+    def schemaVersion
+    DockerImage image
+
+    node('containers-jenkins-plugin') {
+        stage 'Checkout', {
+            checkout scm
+            branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+            schemaVersion = params.schemaVersion ?: 'master'
+        }
+        
+        stage 'Validate new revision', {
+            def currentRef = sh(script: 'cd eLife-JATS-schematron && git rev-parse HEAD && cd ..', returnStdout: true).trim()
+            if( currentRef == schemaVersion ) {
+                error("Already using schematron revision ${schemaVersion}")
+            }
+        }
+
+        stage 'Update Schematron', {
+            sh "cd eLife-JATS-schematron && git checkout ${schemaVersion} && cd .."
+        }
+
+        stage 'Build', {
+            dockerBuild('basex-validator', 'ci', null, 'elifesciences')
+        }
+
+        stage 'Smoke Tests', {
+            try {
+                sh "docker run -d --name 'basex-validator' --rm --memory='512m' -p 1984:1984 -p 8984:8984 elifesciences/basex-validator:ci"
+                sh "sleep 10"
+                sh "cd test && ./smoke_tests_wsgi.sh && cd .."
+            } finally {
+                sh "docker stop 'basex-validator'"
+            }
+        }
+
+        stage 'Commit', {
+            sh "git add eLife-JATS-schematron"
+            elifeGitCommit("chore(release): updated schematron to revision ${schemaVersion}")
+            sh "git push origin ${branchName}"
+        }
+    }
+}
