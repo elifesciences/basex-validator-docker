@@ -19,7 +19,7 @@ elifePipeline {
         }
 
         stage 'Update Schematron', {
-            sh "cd eLife-JATS-schematron && git checkout ${schemaVersion} && cd .."
+            sh "cd eLife-JATS-schematron && git fetch origin && git checkout ${schemaVersion} && cd .."
         }
 
         stage 'Build', {
