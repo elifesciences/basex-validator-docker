@@ -11,7 +11,7 @@
         <Arg name="server"><Ref refid="Server"/></Arg>
         <Set name="host">0.0.0.0</Set>
         <Set name="port">8984</Set>
-        <Set name="idleTimeout">120000</Set>
+        <Set name="idleTimeout">180000</Set>
         <Set name="reuseAddress">true</Set>
       </New>
     </Arg>
