@@ -1,4 +1,4 @@
- General Options
+# General Options
 DEBUG = false
 DBPATH = /srv/basex/data
 LOGPATH = .logs
@@ -20,7 +20,7 @@ PROXYPORT = 0
 NONPROXYHOSTS = 
 IGNORECERT = false
 IGNOREHOSTNAME = false
-TIMEOUT = 30
+TIMEOUT = 120
 KEEPALIVE = 600
 PARALLEL = 8
 LOG = true
