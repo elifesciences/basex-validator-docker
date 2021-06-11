@@ -1,0 +1,132 @@
+/* height 100% needed to stop page expanding*/
+#root {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    height: 100%;
+    overflow: hidden;
+}
+.header {
+    flex-basis: 10%;
+    display: flex;
+    flex-direction: row;
+    color: #696969;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 25pt;
+    font-weight: bold;
+}
+#home-wrapper {
+    margin: 0 5px 0 10px;
+}
+#title {
+    margin: 2px 5px;
+}
+.container {
+    flex-basis: 90%;
+    display: flex;
+    flex-flow: row nowrap;
+    margin: 10px 10px 10px 10px;
+    overflow: hidden;
+}
+form {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 10pt;
+}
+.form-group {
+    margin:20px 0 0 20px;
+}
+.form-group > label{
+    padding-right:10px;
+}
+button {
+    font-size: 11pt;
+    background-color:#087acc;
+    color:#fff;
+    border-radius:3px;
+    padding: 5px;
+    height: 2rem;
+    width: 4rem;
+    border: none;
+    margin: 2px;
+    transition-duration: 0.4s;
+}
+button:hover {
+    opacity:0.6; 
+}
+.button-loading {
+    opacity:0.6; 
+}
+#editor {
+    flex-basis: 55%;
+    margin-right: 10px;
+    overflow: hidden;
+}
+#results {
+    margin-left: 10px;
+    flex-basis: 45%;
+    font-family: 'Noto Sans', sans-serif;
+    overflow: hidden;
+}
+/* parents must have overflow hidden for this to work */
+#table-scroll {
+    height: 100%;
+    overflow-y: scroll; 
+    margin-top: 10px;
+}
+/* always show scrollbar*/
+::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+}
+::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, .5);
+    box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+}
+th {
+    text-align:left;
+    font-size: 10pt;
+    cursor: pointer;
+}
+td {
+    padding:7px;
+    text-align:left;
+    font-size: 9pt;
+}
+.align-middle {
+    text-align: center;
+}
+.info .align-middle {
+    border-left: 2px solid rgb(58, 136, 238);
+}
+.warning .align-middle {
+    border-left: 2px solid rgb(238, 175, 58);
+}
+.error .align-middle {
+    border-left: 2px solid rgb(238, 58, 58);
+}
+.odd {
+    background-color:rgb(244, 251, 253);
+}
+.completed * {
+    color:#ccc7c7be;
+    cursor: text;
+}
+.message {
+    cursor: pointer;
+}
+.mark {
+    animation: highlight 2000ms ease-out;
+}
+@keyframes highlight {
+    0% {
+        background-color:rgb(252, 250, 135);
+    }
+    100% {
+      background-color: white;
+    }
+}
+.breakpoints {
+    width: .9em;
+}

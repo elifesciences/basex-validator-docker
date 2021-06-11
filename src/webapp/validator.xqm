@@ -3,7 +3,6 @@ import module namespace session = "http://basex.org/modules/session";
 import module namespace rest = "http://exquery.org/ns/restxq";
 declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
 
-
 declare
   %rest:path("/schematron/pre")
   %rest:POST("{$xml}")
@@ -42,33 +41,6 @@ function e:validate-final($xml)
   if ($xml//*:media[@mimetype="video"]) then (e:svrl2json-final($xml,$svrl))
   else e:svrl2json($svrl)
 };
-
-declare
-  %rest:path("/schematron")
-  %rest:GET
-  %output:method("html")
-function e:upload()
-{
-  let $div := 
-  <div class="col-12">
-            <form id="form1" method="POST" enctype="multipart/form-data" onSubmit="disableBtn()">
-                <div class="row justify-content-start">
-                    <div class="form-group col-10">
-                        <label for="InputFiles" class="col-md-2 control-label">Select file:</label>
-                        <input type="file" name="xml" accept="application/xml"/>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-2">Schematron:</label>
-                    <button id="preBtn" class="btn btn-primary" onclick="addSpinner(event)" type="submit" formaction="/schematron/pre-table">Pre</button>
-                    <button id="finalBtn" class="btn btn-primary" onclick="addSpinner(event)" type="submit" formaction="/schematron/final-table">Final</button>
-                </div>
-            </form>
-        </div> 
-    
-  return e:template($div) 
-};
-
 
 declare function e:svrl2json($svrl)
 { 
@@ -212,181 +184,191 @@ declare function e:transform($xml,$schema)
   catch * { <schematron-output><successful-report id="validator-broken" location="unknown" role="error"><text>{'Error [' || $err:code || ']: ' || $err:description}</text></successful-report></schematron-output>}
 };
 
+
+(: HTML pages:)
+
 declare
-  %rest:path("/schematron/pre-table")
+  %rest:path("/")
+  %rest:GET
+  %output:method("html")
+function e:upload()
+{
+  let $form := <form id="form1" method="POST" enctype="multipart/form-data">
+                 <div class="form-group">
+                   <label for="files">Select file:</label>
+                   <input id="files" type="file" name="xml" accept="application/xml"/>
+                 </div>
+                 <div class="form-group">
+                    <label class="col-2">Schematron:</label>
+                    <button id="preBtn" formaction="/pre-result">Pre</button>
+                    <button id="finalBtn" formaction="/final-result">Final</button>
+                 </div>
+               </form>
+  let $script := <script src="../static/form.js"></script>
+   
+  return e:template(($form,$script))
+};
+
+declare
+  %rest:path("/pre-result")
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
   %output:method("html")
-function e:validate-pre-table($xml)
+function e:validate-pre-result($xml)
 as element(html)
 {
   let $xsl := doc('./schematron/pre-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  let $rows :=  e:svrl2table-rows($svrl)
-  return e:template(e:table-template($rows))
+  let $container := <div class="container">
+                    <div id="editor">
+                      <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                    </div>
+                    {e:svrl2result($svrl)}
+                    </div>
+  let $scripts := (<script src="../static/codemirror/lib/codemirror.js"></script>,
+                   <script src="../static/codemirror/mode/xml/xml.js"></script>,
+                   <script src="../static/codemirror/addon/search/jump-to-line.js"></script>,
+                   <script src="../static/codemirror/addon/search/search.js"></script>,
+                   <script src="../static/codemirror/addon/search/searchcursor.js"></script>,
+                   <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
+                   <script src="../static/editor.js"></script>)
+  let $elems := ($container,$scripts)
+  return e:template($elems)
 };
 
 declare
-  %rest:path("/schematron/final-table")
+  %rest:path("/final-result")
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
   %output:method("html")
-function e:validate-final-table($xml)
+function e:validate-final-result($xml)
 as element(html)
 {
   let $xsl := doc('./schematron/final-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  (: Check for Glencoe metadata :)
-  let $rows := if ($xml//*:media[@mimetype="video"]) then (e:svrl2table-rows-final($xml,$svrl))
-               else e:svrl2table-rows($svrl)
-  return e:template(e:table-template($rows))
+  let $container := <div class="container">
+                    <div id="editor">
+                      <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                    </div>
+                    {if ($xml//*:media[@mimetype="video"]) then (e:svrl2result-video($xml,$svrl))
+                     else e:svrl2result($svrl)}
+                    </div>
+  let $scripts := (<script src="../static/codemirror/lib/codemirror.js"></script>,
+                   <script src="../static/codemirror/mode/xml/xml.js"></script>,
+                   <script src="../static/codemirror/addon/search/jump-to-line.js"></script>,
+                   <script src="../static/codemirror/addon/search/search.js"></script>,
+                   <script src="../static/codemirror/addon/search/searchcursor.js"></script>,
+                   <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
+                   <script src="../static/editor.js"></script>)
+  let $elems := ($container,$scripts)
+  return e:template($elems)
 };
 
-declare function e:svrl2table-rows($svrl) as element(tr)*
-{
-  for $x in $svrl//*[@role=('error','warn','warning','info')]
-  let $id-content := if ($x/@see) then <a href="{$x/@see/string()}" target="_blank">{$x/@id/string()}</a>
-                  else $x/@id/string()
-  return <tr>
-          <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
-          <td class="align-middle">{$x/@role/string()}</td>
-          <td class="align-middle">{$id-content}</td>
-          <td class="breakable align-middle">{$x/@location/string()}</td>
-          <td class="align-middle">{data($x/*:text)}</td>
-        </tr>
+declare
+function e:svrl2result($svrl) as element(div) {
+  let $table := <table>
+    <thead>
+      <tr>
+        <th/>
+        <th>Type</th>
+        <th>ID</th>
+        <th hidden="">XPath</th>
+      <th>Message</th>
+    </tr>    
+    </thead>
+    <tbody>{e:get-table-rows($svrl)}</tbody>
+</table>
+  
+  return <div id="results">
+            <div id="table-scroll">{$table}</div>
+        </div>
 };
 
-declare function e:svrl2table-rows-final($xml,$svrl) as element(tr)*
+declare function e:svrl2result-video($xml,$svrl) as element(div)*
 {
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-rows := 
-    if ($glencoe//*:error) then <tr>
-                                  <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
-                                  <td class="align-middle">unknown</td>
-                                  <td class="align-middle">error</td>
-                                  <td class="breakable align-middle">unknown</td>
-                                  <td class="align-middle">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
+    if ($glencoe//*:error) then <tr class="error">
+                                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                                  <td>Error</td>
+                                  <td>unknown</td>
+                                  <td class="xpath" hidden="">unknown</td>
+                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
                                 </tr>
     else (
            for $vid in $xml//*:media[@mimetype="video"]
            let $id := $vid/@id
            return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
-           else <tr>
-                  <td class="align-middle"><input class="unticked" type="checkbox" value="" onclick="updateRow(event)"/></td>
-                  <td class="align-middle">unknown</td>
-                  <td class="align-middle">error</td>
-                  <td class="breakable align-middle">unknown</td>
-                  <td class="align-middle">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
+           else <tr class="error">
+                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                  <td>Error</td>
+                  <td>unknown</td>
+                  <td class="xpath" hidden="">{$id}</td>
+                  <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>
         )
-   let $table-rows := e:svrl2table-rows($svrl)       
-   return ($glencoe-rows,$table-rows)
+   
+   let $table-rows := e:get-table-rows($svrl)       
+   let $table := <table>
+   <thead>
+     <tr>
+      <th/>
+      <th>Type</th>
+      <th>ID</th>
+      <th hidden=""/>
+      <th>Message</th>
+      </tr>
+   </thead>
+   <tbody>
+     {($glencoe-rows,$table-rows)}
+   </tbody>
+</table>
+   
+   return <div id="results">
+            <div id="table-scroll">{$table}</div>
+        </div>
 };
 
-declare function e:table-template($table-rows) as element(table){
-  <table id="result" class="table table-striped table-bordered" style="width:100%">
-    <thead>
-        <tr>
-            <th/>
-            <th>Type</th>
-            <th>ID</th>
-            <th class="breakable">XPath</th>
-            <th>Message</th>
-        </tr>
-    </thead>
-    <tbody>
-    {$table-rows}
-    </tbody>
-</table>  
+declare function e:get-table-rows($svrl) as element(tr)* {
+  for $x at $p in $svrl//*[@role=('error','warn','warning','info')]
+    let $id-content := if ($x/@see) then <a href="{$x/@see/string()}" target="_blank">{$x/@id/string()}</a>
+                  else $x/@id/string()
+    let $type := (upper-case(substring($x/@role,1,1))||substring($x/@role,2))
+    let $class := if ($p mod 2 = 0) then ($x/@role||' even') else ($x/@role||' odd')
+    return <tr class="{$class}">
+            <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+            <td>{$type}</td>
+            <td>{$id-content}</td>
+            <td class="xpath" hidden="">{$x/@location/string()}</td>
+            <td class="message">{data($x/*:text)}</td>
+           </tr>
 };
 
 declare
-function e:template($elem as element())
-as element(html) 
-{
+function e:template($elem as element()*) as element(html) {
 <html lang="en">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></meta>
-        <meta charset="utf-8"></meta>
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"></meta>
-        <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.56d32e31.png"/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.css" crossorigin="anonymous"></link>
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css" crossorigin="anonymous"></link>
-        <style><![CDATA[.breakable {
-        word-wrap: break-word;
-        word-break: break-all;
-        }
-      .completed *{
-      color:#ccc7c7be;
-    }]]></style>
-        <title>Schematron Validator</title>
-  </head>
+<head>
+    <meta charset="utf-8"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="../static/favicon-32x32.56d32e31.png"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link href="../static/styles.css" rel="stylesheet"/>
+    <link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>
+    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>
+    <title>XML Validator</title>
+</head>
   <body>
-  <div class="container">
-    <div class="col-2"><a href="/schematron"><img src="../static/elife.svg" class="img-thumbnail"/></a></div>
-    <div class="col-8">
-        <h3>Schematron validator</h3>
-    </div>
+    <div id="root">
+      <div class="header">
+        <div id="home-wrapper">
+          <a href="/"><img src="../static/elife.svg" class="img-thumbnail"/></a>
+        </div>
+        <span id="title">XML Validator</span>
+      </div>
     {$elem}
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
-    <script><![CDATA[$(document).ready(function() {
-        $('#result').DataTable({
-            paging: false,
-            scrollX: true,
-            scrollY: false,
-            colReorder: false,
-            order: [],
-            autoWidth: false,
-            columnDefs: [
-              { "targets": 0, "width": "10px" },
-              { "targets": 1, "width": "40px" },
-              { "targets": 2, "width": "98px" },
-              { "targets": 3, "width": "290px" },
-              { "targets": 4, "width": "500px" }
-            ],
-            fixedColumns: true,
-            autoWidth: false
-        });
-    });]]></script>
-    <script><![CDATA[function disableBtn(){
-          preBtn.setAttribute('disabled','');
-          finalBtn.setAttribute('disabled','');
-        };
-
-        function addSpinner(e){
-          let btn = e.target
-          let btnText = btn.innerHTML
-          btn.innerHTML = `<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> ${btnText}`
-        };
-        
-        function updateRow(e){
-          let checkbox = e.target;
-          if (checkbox.classList.contains("unticked")){
-              checkbox.classList.toggle("unticked");
-              let row = checkbox.parentNode.parentNode;
-              for (let i = 1; i < row.cells.length; i++){
-                let cell = row.cells[i]
-                let content = cell.innerHTML;
-                cell.innerHTML = `<del>${content}</del>`;
-                cell.classList.toggle("completed");
-              };
-          }
-          else {
-            checkbox.classList.toggle("unticked");
-            let row = checkbox.parentNode.parentNode;
-            for (let i = 1; i < row.cells.length; i++){
-                let cell = row.cells[i]
-                let del = cell.childNodes[0];
-                cell.innerHTML = del.innerHTML;
-                cell.classList.toggle("completed");
-            };
-          };
-        };   
-    ]]></script>
   </body>
 </html>
 };
