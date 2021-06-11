@@ -1,0 +1,38 @@
+<dtds>
+    <archiving>
+        <dtd version="1.0" uri="JATS-archivearticle1.dtd"/>
+        <dtd version="1.1d1" uri="JATS-archive-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1d2" uri="JATS-archive-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1d3" uri="JATS-archive-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1" uri="JATS-archivearticle1-mathml3.dtd"/>
+        <dtd version="1.2d1" uri="JATS-archivearticle1-mathml3.dtd"/>
+        <dtd version="1.2d2" uri="JATS-archive-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.2" uri="JATS-archivearticle1-mathml3.dtd"/>
+        <dtd version="1.3d1" uri="JATS-archive-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.3d2" uri="JATS-archive-oasis-article1-3d2-mathml3.dtd"/>
+    </archiving>
+    <publishing>
+        <dtd version="1.0" uri="JATS-journalpublishing1.dtd"/>
+        <dtd version="1.1d1" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1d2" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1d3" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.1" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.2d1" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.2d2" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.2" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.3d1" uri="JATS-journalpublishing-oasis-article1-mathml3.dtd"/>
+        <dtd version="1.3d2" uri="JATS-journalpublishing-oasis-article1-3d2-mathml3.dtd"/>
+    </publishing>
+    <authoring>
+        <dtd version="1.0" uri="JATS-articleauthoring1.dtd"/>
+        <dtd version="1.1d1" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.1d2" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.1d3" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.1" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.2d1" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.2d2" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.2" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.3d1" uri="JATS-articleauthoring1-mathml3.dtd"/>
+        <dtd version="1.3d2" uri="JATS-articleauthoring1-3d2-mathml3.dtd"/>
+    </authoring>
+</dtds>
