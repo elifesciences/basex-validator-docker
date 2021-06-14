@@ -317,6 +317,8 @@ as element(html)
                    <script src="../static/codemirror/addon/search/search.js"></script>,
                    <script src="../static/codemirror/addon/search/searchcursor.js"></script>,
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
+                   <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
+                   <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
                    <script src="../static/editor.js"></script>)
   let $elems := ($container,$scripts)
   return e:template($elems)
@@ -345,6 +347,8 @@ as element(html)
                    <script src="../static/codemirror/addon/search/search.js"></script>,
                    <script src="../static/codemirror/addon/search/searchcursor.js"></script>,
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
+                   <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
+                   <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
                    <script src="../static/editor.js"></script>)
   let $elems := ($container,$scripts)
   return e:template($elems)

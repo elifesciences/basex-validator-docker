@@ -22,6 +22,7 @@ let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
   dragDrop: false,
   spellcheck: false,
   autocorrect: false,
+  matchTags: {bothTags: true},
   extraKeys: {
     "Cmd-F": "findPersistent",
     "Ctrl-F": "findPersistent"
