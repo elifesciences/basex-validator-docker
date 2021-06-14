@@ -31,10 +31,9 @@ let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 editor.setSize("100%","100%");
 
 const xml = parseXml();
-const rootName = xml.evaluate('/*',xml,null,9).singleNodeValue.nodeName;
+const rootName = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue.nodeName;
 const xmlContent = xml.evaluate('/descendant::article[1]',xml,nsResolver,9).singleNodeValue.outerHTML;
 const xmlLineCount = xmlContent.split("\n").length;
-
 addEditorLines(addBreakPoints);
 
 editor.on("gutterClick", function(cm, n) {
@@ -61,7 +60,7 @@ function addEditorLines(callback) {
     if (xpath) {
       if (xpath.startsWith("/")) {
         xpath = xpath.includes('namespace-uri()') ? changeXpathType(xpath) : xpath;
-        let node = xml.evaluate(xpath,xml,null,9);
+        let node = xml.evaluate(xpath,xml,nsResolver,9);
         let line = getEditorLine(node);
         tr.setAttribute("data-editor-line",line);
       }
