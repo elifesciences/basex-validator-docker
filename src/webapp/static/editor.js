@@ -31,10 +31,12 @@ let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 
 editor.setSize("100%","100%");
 
-const xml = parseXml();
-const rootName = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue.nodeName;
-const xmlContent = xml.evaluate('/descendant::article[1]',xml,nsResolver,9).singleNodeValue.outerHTML;
-const xmlLineCount = xmlContent.split("\n").length;
+let xml = parseXml();
+// if the root node has a preceding processing-instruction
+let hasPI = document.getElementById("code").innerHTML.startsWith("&lt;?");
+let rootName = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue.nodeName;
+let xmlContent = xml.evaluate('/descendant::article[1]',xml,nsResolver,9).singleNodeValue.outerHTML;
+
 addEditorLines(addBreakPoints);
 
 editor.on("gutterClick", function(cm, n) {
@@ -109,7 +111,7 @@ function makeBreakpoint(type) {
 function getEditorLine(node) {
   let str = node.singleNodeValue.outerHTML;
   if (str.startsWith("<" + rootName + " ")) {
-    return 0;
+    return (hasPI) ? 1 : 0;
   }
   /* Use parent node line, to account for numerous elements 
      within the DOM containing the same content */
@@ -120,7 +122,7 @@ function getEditorLine(node) {
     let parentLine = precedingParentXml.split("\n").length - 1;
     let precedingXml = removeNS(parentContent).split(content)[0];
     let line = precedingXml.split("\n").length;
-    return (parentLine + line) - 1;
+    return (hasPI) ? (parentLine + line) : (parentLine + line) - 1;
   }
 }
 
