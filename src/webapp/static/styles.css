@@ -67,12 +67,31 @@ button:hover {
     flex-basis: 45%;
     font-family: 'Noto Sans', sans-serif;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.status {
+    color: #696969;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+.results-status {
+    margin-right: 10px;
+    height: 20px;
+    vertical-align:text-top;
+}
+#dtd {
+    margin-bottom: 20px;
+}
+#schematron {
+    margin-top: 20px;
 }
 /* parents must have overflow hidden for this to work */
-#table-scroll {
+.table-scroll {
     height: 100%;
+    overflow: hidden;
     overflow-y: scroll; 
-    margin-top: 10px;
 }
 /* always show scrollbar*/
 ::-webkit-scrollbar {
@@ -85,26 +104,36 @@ button:hover {
     box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 th {
-    text-align:left;
+    text-align:center;
     font-size: 10pt;
     cursor: pointer;
+    border-bottom: solid 1px #cfcfcf;
+    border-right: solid 1px #cfcfcf;
+    background-color: #f3f3f3;
+    border-radius:4px;
+}
+th img {
+    height: 20px;
 }
 td {
     padding:7px;
     text-align:left;
     font-size: 9pt;
+    border-radius:4px;
+    border-right: solid 1px #dbdbdb;
+    border-bottom: solid 1px #dbdbdb;
 }
 .align-middle {
     text-align: center;
 }
 .info .align-middle {
-    border-left: 2px solid rgb(58, 136, 238);
+    border-left: 3px solid rgb(58, 136, 238);
 }
 .warning .align-middle {
-    border-left: 2px solid rgb(238, 175, 58);
+    border-left: 3px solid rgb(238, 175, 58);
 }
 .error .align-middle {
-    border-left: 2px solid rgb(238, 58, 58);
+    border-left: 3px solid rgb(238, 58, 58);
 }
 .odd {
     background-color:rgb(244, 251, 253);

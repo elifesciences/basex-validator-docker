@@ -290,9 +290,9 @@ function e:upload()
                     <button id="finalBtn" formaction="/final-result">Final</button>
                  </div>
                </form>
-  let $script := <script src="../static/form.js"></script>
+  let $script := <script src="../static/form.js" defer=""></script>
    
-  return e:template(($form,$script))
+  return e:template($script,$form)
 };
 
 declare
@@ -302,16 +302,24 @@ declare
   %output:method("html")
 function e:validate-pre-result($xml)
 as element(html)
-{
+{  
   let $xsl := doc('./schematron/pre-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
+  
   let $container := <div class="container">
-                    <div id="editor">
-                      <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                      <div id="editor">
+                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                      </div>
+                      <div id="results">
+                        <div class="table-scroll">
+                        {e:dtd2result($xml),
+                        e:svrl2result($svrl)}
+                        </div>
+                      </div>
                     </div>
-                    {e:svrl2result($svrl)}
-                    </div>
-  let $scripts := (<script src="../static/codemirror/lib/codemirror.js"></script>,
+  let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
+                   <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
+                   <script src="../static/codemirror/lib/codemirror.js"></script>,
                    <script src="../static/codemirror/mode/xml/xml.js"></script>,
                    <script src="../static/codemirror/addon/search/jump-to-line.js"></script>,
                    <script src="../static/codemirror/addon/search/search.js"></script>,
@@ -319,9 +327,9 @@ as element(html)
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
-                   <script src="../static/editor.js"></script>)
-  let $elems := ($container,$scripts)
-  return e:template($elems)
+                   <script src="../static/editor.js" defer=""></script>)
+                   
+  return e:template($scripts,$container)
 };
 
 declare
@@ -335,13 +343,20 @@ as element(html)
   let $xsl := doc('./schematron/final-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
   let $container := <div class="container">
-                    <div id="editor">
-                      <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                      <div id="editor">
+                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                      </div>
+                      <div id="results">
+                        <div class="table-scroll">
+                        {e:dtd2result($xml),
+                         if ($xml//*:media[@mimetype="video"]) then (e:svrl2result-video($xml,$svrl))
+                         else e:svrl2result($svrl)}
+                        </div>
+                      </div>
                     </div>
-                    {if ($xml//*:media[@mimetype="video"]) then (e:svrl2result-video($xml,$svrl))
-                     else e:svrl2result($svrl)}
-                    </div>
-  let $scripts := (<script src="../static/codemirror/lib/codemirror.js"></script>,
+  let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
+                   <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
+                   <script src="../static/codemirror/lib/codemirror.js"></script>,
                    <script src="../static/codemirror/mode/xml/xml.js"></script>,
                    <script src="../static/codemirror/addon/search/jump-to-line.js"></script>,
                    <script src="../static/codemirror/addon/search/search.js"></script>,
@@ -349,17 +364,48 @@ as element(html)
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
-                   <script src="../static/editor.js"></script>)
-  let $elems := ($container,$scripts)
-  return e:template($elems)
+                   <script src="../static/editor.js" defer=""></script>)
+  
+   return e:template($scripts,$container)
 };
 
-declare
-function e:svrl2result($svrl) as element(div) {
+declare function e:dtd2result($xml) as element(div) {
+  let $version := e:get-version($xml)
+  let $dtd := e:get-dtd($version,"archiving")
+  let $report := validate:dtd-report($xml,$dtd)
+  let $status := $report//*:status/text()
+  let $image-name := if ($status="valid") then ("valid") else 'error'
+  let $table := if ($status="valid") then ()
+                else (<table><tbody>{
+                  for $x at $p in $report//*:message[@level="Error"]
+                  let $class := if ($p mod 2 = 0) then ('error even') else ('error odd')
+                  return 
+                  <tr class="{$class}" data-editor-line="{$x/@line/string()}">
+                    <td class="align-middle">
+                      <input class="unticked" type="checkbox" value=""/>
+                    </td>
+                    <td>{data($x)}</td>
+                  </tr>
+                }</tbody></table>)
+  
+  return <div id="dtd">
+            <div class="status">
+              <img src="{('../static/'||$image-name||'.svg')}" class="results-status"/>
+              <span>DTD</span>
+            </div>
+            {$table}
+         </div>
+};
+
+declare function e:svrl2result($svrl) as element(div) {
+  let $image-name := if ($svrl//*[@role="error"]) then 'error'
+                     else if ($svrl//*[@role="warning"]) then 'warning'
+                     else if ($svrl//*[@role="info"]) then 'info'
+                     else 'valid'
   let $table := <table>
     <thead>
       <tr>
-        <th/>
+        <th><img src="../static/arrows.svg"/></th>
         <th>Type</th>
         <th>ID</th>
         <th hidden="">XPath</th>
@@ -369,8 +415,12 @@ function e:svrl2result($svrl) as element(div) {
     <tbody>{e:get-table-rows($svrl)}</tbody>
 </table>
   
-  return <div id="results">
-            <div id="table-scroll">{$table}</div>
+  return <div id="schematron">
+          <div class="status">
+            <img src="{('../static/'||$image-name||'.svg')}" class="results-status"/>
+            <span>Schematron</span>
+          </div>
+          {$table}
         </div>
 };
 
@@ -378,32 +428,12 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
 {
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
-  let $glencoe-rows := 
-    if ($glencoe//*:error) then <tr class="error">
-                                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
-                                  <td>Error</td>
-                                  <td>unknown</td>
-                                  <td class="xpath" hidden="">unknown</td>
-                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
-                                </tr>
-    else (
-           for $vid in $xml//*:media[@mimetype="video"]
-           let $id := $vid/@id
-           return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
-           else <tr class="error">
-                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
-                  <td>Error</td>
-                  <td>unknown</td>
-                  <td class="xpath" hidden="">{$id}</td>
-                  <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
-                </tr>
-        )
-   
-   let $table-rows := e:get-table-rows($svrl)       
-   let $table := <table>
+  let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml) 
+  let $table-rows := e:get-table-rows($svrl)       
+  let $table := <table>
    <thead>
      <tr>
-      <th/>
+      <th><img src="../static/arrows.svg"/></th>
       <th>Type</th>
       <th>ID</th>
       <th hidden=""/>
@@ -414,10 +444,20 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
      {($glencoe-rows,$table-rows)}
    </tbody>
 </table>
+  
+  let $image-name := if ($glencoe-rows//*:tr[@class="error"]) then 'error'
+                     else if ($svrl//*[@role="error"]) then 'error'
+                     else if ($svrl//*[@role="warning"]) then 'warning'
+                     else if ($svrl//*[@role="info"]) then 'info'
+                     else 'valid'
    
-   return <div id="results">
-            <div id="table-scroll">{$table}</div>
-        </div>
+   return <div id="schematron">
+            <div class="status">
+              <img src="{('../static/'||$image-name||'.svg')}" class="results-status"/>
+              <span>Schematron</span>
+            </div>
+            {$table}
+          </div>
 };
 
 declare function e:get-table-rows($svrl) as element(tr)* {
@@ -435,8 +475,28 @@ declare function e:get-table-rows($svrl) as element(tr)* {
            </tr>
 };
 
+declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
+  if ($glencoe//*:error) then <tr class="error">
+                                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                                  <td>Error</td>
+                                  <td>unknown</td>
+                                  <td class="xpath" hidden="">unknown</td>
+                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
+                                </tr>
+    else (for $vid in $xml//*:media[@mimetype="video"]
+          let $id := $vid/@id
+          return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
+          else <tr class="error">
+                  <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                  <td>Error</td>
+                  <td>unknown</td>
+                  <td class="xpath" hidden="">{$id}</td>
+                  <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
+                </tr>)
+};
+
 declare
-function e:template($elem as element()*) as element(html) {
+function e:template($scripts as element()*, $elem as element()*) as element(html) {
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -445,8 +505,7 @@ function e:template($elem as element()*) as element(html) {
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
     <link href="../static/styles.css" rel="stylesheet"/>
-    <link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>
-    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>
+    {$scripts}
     <title>XML Validator</title>
 </head>
   <body>

@@ -1,3 +1,5 @@
+"use strict";
+
 // Namespaces in eLife jats
 const namespaces = {
   "ali" : "http://www.niso.org/schemas/ali/1.0/",
@@ -58,7 +60,7 @@ function parseXml() {
 
 // Adds Editor line numbers in data-editor-line attribute to trs
 function addEditorLines(callback) {
-  Array.from(document.querySelectorAll("tbody tr")).forEach((tr) => {
+  Array.from(document.querySelectorAll("#schematron tbody tr")).forEach((tr) => {
     let xpath = tr.children[3].innerText;
     if (xpath) {
       if (xpath.startsWith("/")) {
