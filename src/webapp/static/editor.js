@@ -206,7 +206,12 @@ function updateRow(e) {
 }
 
 function getCellValue(tr, idx) {
-  return tr.children[idx].children[0].getAttribute("value") || tr.children[idx].innerText || tr.children[idx].textContent; 
+  if (tr.children[idx].children[0] == undefined) {
+    return tr.children[idx].innerText || tr.children[idx].textContent; 
+  }
+  else {
+    return tr.children[idx].children[0].getAttribute("value") || tr.children[idx].innerText || tr.children[idx].textContent; 
+  }
 }
 
 function comparer(idx, asc) { 
