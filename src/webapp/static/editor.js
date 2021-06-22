@@ -66,8 +66,9 @@ function addEditorLines(callback) {
       if (xpath.startsWith("/")) {
         xpath = xpath.includes('namespace-uri()') ? changeXpathType(xpath) : xpath;
         let node = xml.evaluate(xpath,xml,nsResolver,9);
-        let line = getEditorLine(node);
+        let line = (node.singleNodeValue != null) ? getEditorLine(node) : null;
         tr.setAttribute("data-editor-line",line);
+        if (line == null) {console.log(xpath + ' not found in xml.')};
       }
       else {
         console.log("'" + xpath + "'" + " is not an XPath. Cannot search or mark Editor for message with id " 
@@ -186,38 +187,26 @@ function nsResolver(prefix) {
 function reorderRows(tbody,tr,i) {
   let parity = tr.className.split(" ")[1];
   let newParity = (i + 1) % 2? "odd" : "even";
+  let completedState = tr.className.includes("completed") ? " " + "completed": null;
   if (parity !== newParity) {
-    tr.className = tr.className.split(" ")[0] + " " + newParity;
+    if (tr.className.includes("completed")) {
+      tr.className = tr.className.split(" ")[0] + " " + newParity + " completed";
+    }
+    else {
+      tr.className = tr.className.split(" ")[0] + " " + newParity;
+    }
   }
   tbody.appendChild(tr);
 }
 
 function updateRow(e) {
-  let checkbox = e.target;
-  if (checkbox.classList.contains("unticked")) {
-      checkbox.classList.toggle("unticked");
-      let row = checkbox.parentNode.parentNode;
-      for (let i = 1; i < row.cells.length; i++){
-        let cell = row.cells[i]
-        let content = cell.innerHTML;
-        cell.innerHTML = `<del>${content}</del>`;
-        cell.classList.toggle("completed");
-      }
-  }
-  else {
-    checkbox.classList.toggle("unticked");
-    let row = checkbox.parentNode.parentNode;
-    for (let i = 1; i < row.cells.length; i++){
-        let cell = row.cells[i]
-        let del = cell.childNodes[0];
-        cell.innerHTML = del.innerHTML;
-        cell.classList.toggle("completed");
-    }
-  }
+  let row = e.target.parentNode.parentNode;
+  row.classList.toggle("completed");
+  (e.target.getAttribute("value") === "z") ? e.target.setAttribute("value","a") : e.target.setAttribute("value","z"); 
 }
 
 function getCellValue(tr, idx) {
-  return tr.children[idx].innerText || tr.children[idx].textContent; 
+  return tr.children[idx].children[0].getAttribute("value") || tr.children[idx].innerText || tr.children[idx].textContent; 
 }
 
 function comparer(idx, asc) { 
@@ -233,7 +222,7 @@ function comparer(idx, asc) {
 // parent function for changeXpathToken
 function changeXpathType(xpath) {
   let xpathArray = xpath.split('*:')
-  for (i = 0; i < xpathArray.length; i++) {
+  for (let i = 0; i < xpathArray.length; i++) {
     xpathArray[i].includes('namespace-uri()') ? xpathArray.splice(i,1,changeXpathToken(xpathArray[i])) : null;
   }
   return xpathArray.join("");

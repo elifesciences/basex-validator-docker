@@ -126,6 +126,9 @@ td {
 .align-middle {
     text-align: center;
 }
+input[type="checkbox"] {
+    cursor: default;
+}
 .info .align-middle {
     border-left: 3px solid rgb(58, 136, 238);
 }
@@ -138,9 +141,10 @@ td {
 .odd {
     background-color:rgb(244, 251, 253);
 }
-.completed * {
-    color:#ccc7c7be;
+.completed *{
+    color:#ccc7c7be !important;
     cursor: text;
+    text-decoration: line-through !important;
 }
 .message {
     cursor: pointer;
