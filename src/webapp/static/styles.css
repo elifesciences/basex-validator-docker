@@ -160,18 +160,23 @@ input[type="checkbox"] {
       background-color: white;
     }
 }
+.CodeMirror-linenumbers {
+    border-right: solid 1px rgb(185, 185, 185);
+    padding-right: 2px;
+}
 .breakpoints {
-    width: 0.9em;
+    width: 1.5em;
 }
 .breakpoint img{
     padding-top: 1.7px;
     width: 0.9em;
+    padding-left: 4px;
 }
 .breakpoint div{
     width: 400px;
     position: relative;
     bottom: 10px;
-    left: 10px;
+    left: 14px;
     visibility: hidden;
 }
 .breakpoint:hover div{

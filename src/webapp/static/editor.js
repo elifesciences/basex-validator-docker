@@ -7,14 +7,6 @@ const namespaces = {
   "xlink": "http://www.w3.org/1999/xlink"
 };
 
-// schematron message types
-const typeColors = {
-  "info": "#3A88EE",
-  "warning": "#EEAF3A",
-  "error": "#EE3A3A",
-  "custom": "#257E2C"
-};
-
 // breakpoints to add to editor
 let breakpoints = [];
 
@@ -92,7 +84,7 @@ function addBreakPoints() {
     if (/^\d+$/.test(line)) {
       line = parseInt(line)
       let type = tr.className.split(" ")[0];
-      let message = getCellValue(tr,4);
+      let message = (tr.parentNode.parentNode.parentNode.getAttribute("id") === "schematron") ? getCellValue(tr,4) : getCellValue(tr,1);
       let obj = {type,line,message};
       lineArray.push(obj);
   }});
@@ -190,7 +182,7 @@ function scrollToEditor(e) {
   }
 }
 
-// ccrolls to line in editor view
+// scrolls to line in editor view
 function jumpToLine(i) { 
   let t = editor.charCoords({line: i, ch: 0}, "local").top; 
   let middleHeight = (editor.getScrollerElement().offsetHeight / 2) - 300; 
@@ -249,7 +241,7 @@ function updateRow(e) {
   (e.target.getAttribute("value") === "z") ? e.target.setAttribute("value","a") : e.target.setAttribute("value","z"); 
   let line = row.getAttribute("data-editor-line");
   let type = row.className.split(" ")[0];
-  let message = getCellValue(row,4);
+  let message = (row.parentNode.parentNode.parentNode.getAttribute("id") === "schematron") ? getCellValue(row,4) : getCellValue(row,1);
   updateBreakpoint(line,type,message,row.className.includes("completed"));
 }
 

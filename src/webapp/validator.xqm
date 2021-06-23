@@ -380,11 +380,11 @@ declare function e:dtd2result($xml) as element(div) {
                   for $x at $p in $report//*:message[@level="Error"]
                   let $class := if ($p mod 2 = 0) then ('error even') else ('error odd')
                   return 
-                  <tr class="{$class}" data-editor-line="{$x/@line/string()}">
+                  <tr class="{$class}" data-editor-line="{number($x/@line/string()) - 2}">
                     <td class="align-middle">
                       <input class="unticked" type="checkbox" value=""/>
                     </td>
-                    <td>{data($x)}</td>
+                    <td class="message">{data($x)}</td>
                   </tr>
                 }</tbody></table>)
   
