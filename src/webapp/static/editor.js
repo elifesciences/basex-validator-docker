@@ -1,6 +1,6 @@
 "use strict";
 
-// Namespaces in eLife jats
+// namespaces in elife jats
 const namespaces = {
   "ali" : "http://www.niso.org/schemas/ali/1.0/",
   "mml": "http://www.w3.org/1998/Math/MathML",
@@ -15,16 +15,22 @@ const typeColors = {
   "custom": "#257E2C"
 };
 
+// breakpoints to add to editor
+let breakpoints = [];
+
 let editor = CodeMirror.fromTextArea(document.getElementById("code"), {
   mode: "xml",
   lineNumbers: true,
   lineWrapping: true,
-  gutters: ["CodeMirror-linenumbers", "breakpoints"],
   readOnly: true,
   dragDrop: false,
   spellcheck: false,
   autocorrect: false,
   matchTags: {bothTags: true},
+  gutters: [
+    "CodeMirror-linenumbers",
+    "breakpoints"
+  ],
   extraKeys: {
     "Cmd-F": "findPersistent",
     "Ctrl-F": "findPersistent"
@@ -58,17 +64,17 @@ function parseXml() {
   return xml;
 }
 
-// Adds Editor line numbers in data-editor-line attribute to trs
+// adds editor line numbers in data-editor-line attribute to trs
 function addEditorLines(callback) {
   Array.from(document.querySelectorAll("#schematron tbody tr")).forEach((tr) => {
-    let xpath = tr.children[3].innerText;
+    let xpath = getCellValue(tr,3);
     if (xpath) {
       if (xpath.startsWith("/")) {
         xpath = xpath.includes('namespace-uri()') ? changeXpathType(xpath) : xpath;
         let node = xml.evaluate(xpath,xml,nsResolver,9);
         let line = (node.singleNodeValue != null) ? getEditorLine(node) : null;
-        tr.setAttribute("data-editor-line",line);
         if (line == null) {console.log(xpath + ' not found in xml.')};
+        tr.setAttribute("data-editor-line",line);
       }
       else {
         console.log("'" + xpath + "'" + " is not an XPath. Cannot search or mark Editor for message with id " 
@@ -86,28 +92,66 @@ function addBreakPoints() {
     if (/^\d+$/.test(line)) {
       line = parseInt(line)
       let type = tr.className.split(" ")[0];
-      let obj = {type,line};
+      let message = getCellValue(tr,4);
+      let obj = {type,line,message};
       lineArray.push(obj);
   }});
   let uniqueLines = [...new Set(lineArray.map(item => item.line))];
   uniqueLines.forEach(value => {
     let types = [];
+    let messages = [];
     lineArray.forEach(obj => {
       if (obj.line === value) {
         types.push(obj.type);
+        messages.push(obj.message);
       }
     });
-    (types.includes("error")) ? types = "error" : (types.includes("warning")) ? types = "warning" : types = "info";
-    editor.setGutterMarker(value,"breakpoints", makeBreakpoint(types));
+    let obj = {
+      "line": value,
+      types,
+      messages
+    };
+    breakpoints.push(obj);
   });
+  for (let key in breakpoints) {
+    addBreakPoint(breakpoints[key]);
+  }
 }
 
-// Makes breakpoint marker div to add to editor
-function makeBreakpoint(type) {
-  let marker = document.createElement("div");
-  marker.style.color = typeColors[type];
-  marker.innerHTML = "●";
-  return marker;
+// add breakpoint to editor based on object in breakpoints
+function addBreakPoint(obj) {
+  let type;
+  (obj.types.includes("error")) ? type = "error" : (obj.types.includes("warning")) ? type = "warning" : (obj.types.includes("info")) ? type = "info" : type = null;
+  editor.setGutterMarker(obj.line,"breakpoints", makeBreakpoint(type,obj.messages));
+};
+
+/* makes breakpoint marker div to add to editor
+    type ~~ error, warning, info or null
+    message? ~~ message in td, to show on hover
+*/
+function makeBreakpoint(type,messages) {
+  if (type) {
+    let marker = document.createElement("div");
+    let img = document.createElement("img");
+    marker.className = "breakpoint";
+    img.src = '../static/' + type + '.svg';
+    marker.appendChild(img);
+    if (messages) {
+      let div = document.createElement("div");
+      div.className = "breakpoint-messages";
+      marker.appendChild(div);
+      for (let message of messages) {
+        let p = document.createElement("p");
+        p.className = "breakpoint-message";
+        p.innerHTML = message;
+        div.appendChild(p);
+      }
+    }
+    return marker;
+  }
+  else {
+    return null
+  }
 }
 
 // Returns line number for Editor 
@@ -131,30 +175,31 @@ function getEditorLine(node) {
 
 // td message -> editor
 function scrollToEditor(e) {
-  if (e.target.nodeName === "DEL") {
-    return null;
+  let row = e.target.parentNode;
+  if (row.className.includes("completed")) {
+    return null
   }
-  let line = e.target.parentNode.getAttribute('data-editor-line');
-  if (!isNaN(line)) {
-    line = parseInt(line);
-    jumpToLine(line);
-    editor.setCursor({line,ch:0});
-    markLine(line);
+  else {
+    let line = row.getAttribute('data-editor-line');
+    if (!isNaN(line)) {
+      line = parseInt(line);
+      jumpToLine(line);
+      editor.setCursor({line,ch:0});
+      markLine(line);
+    }
   }
 }
 
-// Scrolls to line in editor view
+// ccrolls to line in editor view
 function jumpToLine(i) { 
   let t = editor.charCoords({line: i, ch: 0}, "local").top; 
   let middleHeight = (editor.getScrollerElement().offsetHeight / 2) - 300; 
   editor.scrollTo(null, t - middleHeight - 10); 
 }
-// Highlights selected line
+// highlights selected line
 function markLine(i) {
   editor.addLineClass(i,"wrap","mark");
-  setTimeout(function(){
-    editor.removeLineClass(i,"wrap","mark");
-  }, 2000);
+  setTimeout(() => {editor.removeLineClass(i,"wrap","mark")}, 2000);
 } 
 
 // EVENT LISTENERS
@@ -186,8 +231,7 @@ function nsResolver(prefix) {
 // ensures odd/even classes are reshuffled
 function reorderRows(tbody,tr,i) {
   let parity = tr.className.split(" ")[1];
-  let newParity = (i + 1) % 2? "odd" : "even";
-  let completedState = tr.className.includes("completed") ? " " + "completed": null;
+  let newParity = (i + 1) % 2 ? "odd" : "even";
   if (parity !== newParity) {
     if (tr.className.includes("completed")) {
       tr.className = tr.className.split(" ")[0] + " " + newParity + " completed";
@@ -203,15 +247,33 @@ function updateRow(e) {
   let row = e.target.parentNode.parentNode;
   row.classList.toggle("completed");
   (e.target.getAttribute("value") === "z") ? e.target.setAttribute("value","a") : e.target.setAttribute("value","z"); 
+  let line = row.getAttribute("data-editor-line");
+  let type = row.className.split(" ")[0];
+  let message = getCellValue(row,4);
+  updateBreakpoint(line,type,message,row.className.includes("completed"));
+}
+
+function updateBreakpoint(line,type,message,completedStatus) {
+  let breakpointObj = breakpoints.find(obj => {
+    return obj.line == line;
+  });
+  let typeIndex = breakpointObj.types.findIndex(element => element == type);
+  let messageIndex = breakpointObj.messages.findIndex(element => element == message);
+  if (completedStatus) {
+    breakpointObj.types.splice(typeIndex, 1);
+    breakpointObj.messages.splice(messageIndex, 1);
+  }
+  else {
+    breakpointObj.types.push(type);
+    breakpointObj.messages.push(message);
+  }
+  addBreakPoint(breakpointObj);
 }
 
 function getCellValue(tr, idx) {
-  if (tr.children[idx].children[0] == undefined) {
-    return tr.children[idx].innerText || tr.children[idx].textContent; 
-  }
-  else {
-    return tr.children[idx].children[0].getAttribute("value") || tr.children[idx].innerText || tr.children[idx].textContent; 
-  }
+  return (tr.children[idx].children[0] == undefined) 
+    ? tr.children[idx].innerText || tr.children[idx].textContent
+    : tr.children[idx].children[0].getAttribute("value") || tr.children[idx].innerText || tr.children[idx].textContent; 
 }
 
 function comparer(idx, asc) { 
@@ -246,7 +308,7 @@ function changeXpathToken(token) {
   return (ns + ':' + tokenArray[0] + "[" + tokenArray[2])
 }
 
-/* Splits large xml snippets into smaller sections 
+/* splits large xml snippets into smaller sections 
    for searhcing in Editor */
 function chunkSearchString(str){
   let array = str.split(/\n/g);
@@ -255,15 +317,12 @@ function chunkSearchString(str){
   return newStr;
 }
 
-/* Removes namespaces such as xmlns:xlink="http://www.w3.org/1999/xlink" 
+/* removes namespaces such as xmlns:xlink="http://www.w3.org/1999/xlink" 
    from outerHTML strings for searching */
-function removeNS(str){
-  if (str.startsWith("<" + rootName + " ")) {
-    return str;
-  }
-  else {
-    return str.replaceAll(` xmlns:xlink="http://www.w3.org/1999/xlink"`,"")
-              .replaceAll(` xmlns:ali="http://www.niso.org/schemas/ali/1.0/"`,"")
-              .replaceAll(` xmlns:mml="http://www.w3.org/1998/Math/MathML"`,"");
-  }
+function removeNS(str) {
+  return (str.startsWith("<" + rootName + " ")) 
+    ? str
+    : str.replaceAll(` xmlns:xlink="http://www.w3.org/1999/xlink"`,"")
+         .replaceAll(` xmlns:ali="http://www.niso.org/schemas/ali/1.0/"`,"")
+         .replaceAll(` xmlns:mml="http://www.w3.org/1998/Math/MathML"`,"");
 }

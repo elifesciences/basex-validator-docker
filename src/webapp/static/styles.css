@@ -127,7 +127,7 @@ td {
     text-align: center;
 }
 input[type="checkbox"] {
-    cursor: default;
+    cursor: default !important;
 }
 .info .align-middle {
     border-left: 3px solid rgb(58, 136, 238);
@@ -143,7 +143,7 @@ input[type="checkbox"] {
 }
 .completed *{
     color:#ccc7c7be !important;
-    cursor: text;
+    cursor: text !important;
     text-decoration: line-through !important;
 }
 .message {
@@ -161,5 +161,28 @@ input[type="checkbox"] {
     }
 }
 .breakpoints {
-    width: .9em;
+    width: 0.9em;
+}
+.breakpoint img{
+    padding-top: 1.7px;
+    width: 0.9em;
+}
+.breakpoint div{
+    width: 400px;
+    position: relative;
+    bottom: 10px;
+    left: 10px;
+    visibility: hidden;
+}
+.breakpoint:hover div{
+    visibility: visible;
+    background-color: rgb(244, 251, 253);
+    border-radius: 8px;
+    border: solid 1px black;
+    font-size: 9pt;
+    font-family: 'Noto Sans', sans-serif;
+}
+.breakpoint div p{
+    padding-left: 5px;
+    padding-right: 5px;
 }
