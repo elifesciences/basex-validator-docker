@@ -70,7 +70,7 @@ function addEditorLines(callback) {
       }
       else {
         console.log("'" + xpath + "'" + " is not an XPath. Cannot search or mark Editor for message with id " 
-        + tr.childNodes[5].childNodes[0].textContent);
+        + getCellValue(tr,2));
       }
     }
   });
@@ -168,7 +168,7 @@ function getEditorLine(node) {
 // td message -> editor
 function scrollToEditor(e) {
   let row = e.target.parentNode;
-  if (row.className.includes("completed")) {
+  if (row.className.includes("completed") || !row.hasAttribute("data-editor-line")) {
     return null
   }
   else {
@@ -239,10 +239,12 @@ function updateRow(e) {
   let row = e.target.parentNode.parentNode;
   row.classList.toggle("completed");
   (e.target.getAttribute("value") === "z") ? e.target.setAttribute("value","a") : e.target.setAttribute("value","z"); 
-  let line = row.getAttribute("data-editor-line");
-  let type = row.className.split(" ")[0];
-  let message = (row.parentNode.parentNode.parentNode.getAttribute("id") === "schematron") ? getCellValue(row,4) : getCellValue(row,1);
-  updateBreakpoint(line,type,message,row.className.includes("completed"));
+  if (row.hasAttribute("data-editor-line")) {
+    let line = row.getAttribute("data-editor-line");
+    let type = row.className.split(" ")[0];
+    let message = (row.parentNode.parentNode.parentNode.getAttribute("id") === "schematron") ? getCellValue(row,4) : getCellValue(row,1);
+    updateBreakpoint(line,type,message,row.className.includes("completed"));
+  }
 }
 
 function updateBreakpoint(line,type,message,completedStatus) {

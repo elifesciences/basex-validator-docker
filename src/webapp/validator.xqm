@@ -270,6 +270,20 @@ declare function e:dtd2json($report){
        ']}'))
 };
 
+(: get Xpath from node. Used for Glencoe error messages :)
+declare function e:getXpath($node as node()) {
+  let $root := $node/ancestor::*[last()]/name()
+  let $parents := ('/'||$root||'[1]/'|| string-join(
+                     for $a in $node/ancestor::*[name()!=$root]
+                     let $name := $a/name()
+                     let $pos := count($a/parent::*/*[name()=$name]) - count($a/following-sibling::*[name()=$name])
+                     return $name||'['||$pos||']','/'))
+  
+  let $pos :=  count($node/parent::*/*[name()=$node/name()]) - count($node/following-sibling::*[name()=$node/name()])
+  let $self := ('/'||$node/name()||'['||$pos||']')
+  return ($parents||$self)
+};
+
 
 (: HTML pages:)
 
@@ -480,9 +494,10 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                                   <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
                                   <td>Error</td>
                                   <td>unknown</td>
-                                  <td class="xpath" hidden="">unknown</td>
+                                  <td class="xpath" hidden="">/article[1]</td>
                                   <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
                                 </tr>
+                                
     else (for $vid in $xml//*:media[@mimetype="video"]
           let $id := $vid/@id
           return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
@@ -490,7 +505,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                   <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
                   <td>Error</td>
                   <td>unknown</td>
-                  <td class="xpath" hidden="">{$id}</td>
+                  <td class="xpath" hidden="">{e:getXpath($vid)}</td>
                   <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>)
 };
