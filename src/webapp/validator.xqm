@@ -293,20 +293,9 @@ declare
   %output:method("html")
 function e:upload()
 {
-  let $form := <form id="form1" method="POST" enctype="multipart/form-data">
-                 <div class="form-group">
-                   <label for="files">Select file:</label>
-                   <input id="files" type="file" name="xml" accept="application/xml"/>
-                 </div>
-                 <div class="form-group">
-                    <label class="col-2">Schematron:</label>
-                    <button id="preBtn" formaction="/pre-result">Pre</button>
-                    <button id="finalBtn" formaction="/final-result">Final</button>
-                 </div>
-               </form>
   let $script := <script src="../static/form.js" defer=""></script>
    
-  return e:template($script,$form)
+  return e:index($script,<div/>)
 };
 
 declare
@@ -341,9 +330,10 @@ as element(html)
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
+                   <script src="../static/form.js" defer=""></script>,
                    <script src="../static/editor.js" defer=""></script>)
                    
-  return e:template($scripts,$container)
+  return e:index($scripts,$container)
 };
 
 declare
@@ -380,7 +370,7 @@ as element(html)
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
                    <script src="../static/editor.js" defer=""></script>)
   
-   return e:template($scripts,$container)
+   return e:index($scripts,$container)
 };
 
 declare function e:dtd2result($xml) as element(div) {
@@ -511,7 +501,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
 };
 
 declare
-function e:template($scripts as element()*, $elem as element()*) as element(html) {
+function e:index($scripts as element()*, $elem as element()*) as element(html) {
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -519,20 +509,37 @@ function e:template($scripts as element()*, $elem as element()*) as element(html
     <link rel="preconnect" href="https://fonts.gstatic.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet"/>
     <link href="../static/styles.css" rel="stylesheet"/>
     {$scripts}
     <title>XML Validator</title>
 </head>
   <body>
     <div id="root">
-      <div class="header">
+      <header>
         <div id="home-wrapper">
-          <a href="/"><img src="../static/elife.svg" class="img-thumbnail"/></a>
+          <a href="/">
+            <img src="../static/elife.svg" class="img-thumbnail"/>
+          </a>
         </div>
-        <span id="title">XML Validator</span>
-      </div>
+        <h1>XML Validator</h1>
+        <form id="form1" method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="files" class="upload-label">
+              <div class="label-left"><i class="ri-file-upload-line"></i></div>
+              <div class="label-right">Upload XML</div>
+            </label>
+            <input id="files" type="file" name="xml" accept="application/xml"/>
+          </div>
+          <div class="form-group">
+            <label class="col-2">Schematron:</label>
+            <button id="preBtn" formaction="/pre-result">Pre</button>
+            <button id="finalBtn" formaction="/final-result">Final</button>
+          </div>
+        </form>
+      </header>
     {$elem}
     </div>
   </body>
 </html>
-}; 
+};
