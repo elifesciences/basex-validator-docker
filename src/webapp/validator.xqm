@@ -519,19 +519,16 @@ function e:index($scripts as element()*, $elem as element()*) as element(html) {
       <header>
         <div id="home-wrapper">
           <a href="/">
-            <img src="../static/elife.svg" class="img-thumbnail"/>
+            <img src="static/elife.svg" class="img-thumbnail"/>
           </a>
+          <h1>XML Validator</h1>
         </div>
-        <h1>XML Validator</h1>
         <form id="form1" method="POST" enctype="multipart/form-data">
-          <div class="form-group">
-            <label for="files" class="upload-label">
-              <div class="label-left"><i class="ri-file-upload-line"></i></div>
-              <div class="label-right">Upload XML</div>
-            </label>
-            <input id="files" type="file" name="xml" accept="application/xml"/>
+          <div id="dropContainer" class="form-group">
+              <i class="ri-upload-2-line"></i><span id="uploadStatus">Upload XML</span>
+              <input id="files" type="file" name="xml" accept="application/xml"/>
           </div>
-          <div class="form-group">
+          <div id="buttons" class="form-group">
             <label class="col-2">Schematron:</label>
             <button id="preBtn" formaction="/pre-result">Pre</button>
             <button id="finalBtn" formaction="/final-result">Final</button>

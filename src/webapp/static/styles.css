@@ -14,12 +14,18 @@ header {
     color: #696969;
     font-family: 'Noto Sans', sans-serif;
     align-items: center;
+    justify-content: space-between;
 }
 #home-wrapper {
+    flex: 0 0 450px;
+    display: flex;
+    flex-direction: row;
+}
+#home-wrapper > a{
     margin: 0 5px 0 10px;
     transition-duration: 0.4s;
 }
-#home-wrapper:hover {
+#home-wrapper > a:hover {
     opacity:0.6; 
 }
 h1 {
@@ -27,50 +33,46 @@ h1 {
     font-size: 25pt;
     font-weight: bold;
 }
-.container {
-    flex-basis: 90%;
-    display: flex;
-    flex-flow: row nowrap;
-    margin: 10px 10px 10px 10px;
-    overflow: hidden;
-}
 form {
+    flex: 0 0 600px;
     font-family: 'Noto Sans', sans-serif;
     font-size: 10pt;
     display: flex;
-    padding-left: 50px;
     color: black;
 }
-.upload-label {
-    display: inline-block;
-    border: 1px solid #63a3d1;
-    border-radius: 3px;
+#dropContainer {
+    border: 1px dashed #696969;
+    color: #696969;
+    font-size: 9pt;
+    flex: 1 0 40px;
+    line-height: 20px;
+    text-align: center;
+    word-break: break-all;
+    padding-right: 20px;
     cursor: pointer;
-    display: flex;
-    align-items:center;
-    transition-duration: 0.4s;
-    background-color:#087acc;
-    color: white;
-    padding: 7px;
-    font-size: 10pt;
 }
-.upload-label:hover{
+#dropContainer:hover {
     opacity:0.6; 
 }
-.label-left i {
-    font-size: 15pt;
+#buttons {
+    flex: 1;
 }
-.label-right {
-    padding-left: 10px;
+#uploadStatus.warning{
+    color: red;
+}
+#dropContainer > i {
+    font-size: 12pt;
+}
+#dropContainer > *{
+    position: relative;
+    top: 25%;
+    padding-right: 10px;
 }
 input[type="file"] {
-    display: none;
+    visibility: hidden;
 }
 .form-group {
-    margin:15px 0 0 30px;
-}
-.form-group > label{
-    margin-right:10px;
+    margin:15px 0 0 15px;
 }
 button {
     font-size: 11pt;
@@ -90,6 +92,13 @@ button:hover {
 }
 .button-loading {
     opacity:0.6; 
+}
+.container {
+    flex-basis: 90%;
+    display: flex;
+    flex-flow: row nowrap;
+    margin: 10px 10px 10px 10px;
+    overflow: hidden;
 }
 #editor {
     flex-basis: 55%;
