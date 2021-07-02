@@ -17,7 +17,7 @@ header {
     justify-content: space-between;
 }
 #home-wrapper {
-    flex: 0 0 450px;
+    flex: 0 0 400px;
     display: flex;
     flex-direction: row;
 }
@@ -34,45 +34,58 @@ h1 {
     font-weight: bold;
 }
 form {
-    flex: 0 0 600px;
+    flex: 0 0 480px;
     font-family: 'Noto Sans', sans-serif;
     font-size: 10pt;
     display: flex;
     color: black;
+    justify-content: center;
+}
+.form-group {
+    margin:15px 0 0 15px;
 }
 #dropContainer {
     border: 1px dashed #696969;
     color: #696969;
     font-size: 9pt;
-    flex: 1 0 40px;
-    line-height: 20px;
-    text-align: center;
+    flex: 0 0 250px;
     word-break: break-all;
-    padding-right: 20px;
     cursor: pointer;
+    display:flex;
+    justify-content: center;
+    align-items: center;
 }
 #dropContainer:hover {
     opacity:0.6; 
 }
 #buttons {
-    flex: 1;
+    flex: 0 0 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 #uploadStatus.warning{
     color: red;
 }
-#dropContainer > i {
-    font-size: 12pt;
+#dropContainer.warning{
+    border-color: red;
 }
-#dropContainer > *{
-    position: relative;
-    top: 25%;
-    padding-right: 10px;
+#dropContainer > i {
+    flex: 15%;
+    margin-left: 20px;
+    font-size: 12pt;
+    font-weight: bold;
+}
+#dropContainer > span{
+    flex:85%;
+    margin-right: 10px;
 }
 input[type="file"] {
-    visibility: hidden;
+    display: none;
 }
-.form-group {
-    margin:15px 0 0 15px;
+#buttons > label {
+    padding-bottom: 5px;
+    font-weight: bold;
 }
 button {
     font-size: 11pt;

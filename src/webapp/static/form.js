@@ -23,10 +23,12 @@ document.ondrop = (e) => {
     dT.items.add(e.dataTransfer.files[0]);
     uploadStatus.innerHTML = fileName; 
     (uploadStatus.className = "warning") ? uploadStatus.classList.toggle("warning"): null;
+    (dropContainer.className.includes("warning")) ? dropContainer.classList.toggle("warning"): null;
   }
   else {
     uploadStatus.innerHTML = fileName + " is not an XML file";
     uploadStatus.className = "warning";
+    dropContainer.className += " warning";
   }
 };
 files.addEventListener('change', (e) => {

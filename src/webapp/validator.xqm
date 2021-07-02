@@ -528,10 +528,12 @@ function e:index($scripts as element()*, $elem as element()*) as element(html) {
               <i class="ri-upload-2-line"></i><span id="uploadStatus">Upload XML</span>
               <input id="files" type="file" name="xml" accept="application/xml"/>
           </div>
-          <div id="buttons" class="form-group">
-            <label class="col-2">Schematron:</label>
-            <button id="preBtn" formaction="/pre-result">Pre</button>
-            <button id="finalBtn" formaction="/final-result">Final</button>
+         <div id="buttons" class="form-group">
+            <label>Schematron</label>
+            <div>
+              <button id="preBtn" formaction="/pre-result">Pre</button>
+              <button id="finalBtn" formaction="/final-result">Final</button>
+            </div>
           </div>
         </form>
       </header>
