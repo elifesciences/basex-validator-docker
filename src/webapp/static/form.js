@@ -24,14 +24,23 @@ document.ondrop = (e) => {
     uploadStatus.innerHTML = fileName; 
     (uploadStatus.className = "warning") ? uploadStatus.classList.toggle("warning"): null;
     (dropContainer.className.includes("warning")) ? dropContainer.classList.toggle("warning"): null;
+    animation(dropContainer,"rubberBand");
   }
   else {
     uploadStatus.innerHTML = fileName + " is not an XML file";
     uploadStatus.className = "warning";
     dropContainer.className += " warning";
+    animation(dropContainer,"bounce");
   }
 };
 files.addEventListener('change', (e) => {
   const fileName = e.target.files[0].name;
   uploadStatus.innerHTML = fileName;
+  (uploadStatus.className = "warning") ? uploadStatus.classList.toggle("warning"): null;
+  (dropContainer.className.includes("warning")) ? dropContainer.classList.toggle("warning"): null;
+  animation(dropContainer,"rubberBand");
 })
+const animation = (elem,animationType) => {
+  elem.classList.toggle(animationType);
+  setTimeout(() => {elem.classList.toggle(animationType)}, 1000);
+}

@@ -368,6 +368,7 @@ as element(html)
                    <script src="../static/codemirror/addon/dialog/dialog.js"></script>,
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
+                   <script src="../static/form.js" defer=""></script>,
                    <script src="../static/editor.js" defer=""></script>)
   
    return e:index($scripts,$container)
