@@ -46,6 +46,7 @@ form {
 }
 #dropContainer {
     border: 1px dashed #696969;
+    border-radius:3px;
     color: #696969;
     font-size: 9pt;
     flex: 0 0 250px;
@@ -103,8 +104,9 @@ button {
 button:hover {
     opacity:0.6; 
 }
-.button-loading {
+button[disabled] {
     opacity:0.6; 
+    cursor: not-allowed;
 }
 .container {
     flex-basis: 90%;

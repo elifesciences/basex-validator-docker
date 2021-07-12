@@ -532,8 +532,8 @@ function e:index($scripts as element()*, $elem as element()*) as element(html) {
          <div id="buttons" class="form-group">
             <label>Schematron</label>
             <div>
-              <button id="preBtn" formaction="/pre-result">Pre</button>
-              <button id="finalBtn" formaction="/final-result">Final</button>
+              <button id="preBtn" disabled="" formaction="/pre-result">Pre</button>
+              <button id="finalBtn" disabled="" formaction="/final-result">Final</button>
             </div>
           </div>
         </form>
