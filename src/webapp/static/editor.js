@@ -36,6 +36,7 @@ let xml = parseXml();
 let hasPI = document.getElementById("code").innerHTML.startsWith("&lt;?");
 let rootName = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue.nodeName;
 let xmlContent = xml.evaluate('/descendant::article[1]',xml,nsResolver,9).singleNodeValue.outerHTML;
+let articleId = xml.evaluate('/descendant::article[1]//article-meta/article-id[@pub-id-type="publisher-id"]',xml,nsResolver,9).singleNodeValue.innerHTML;
 
 addEditorLines(addBreakPoints);
 
@@ -194,7 +195,109 @@ function markLine(i) {
   setTimeout(() => {editor.removeLineClass(i,"wrap","mark")}, 2000);
 } 
 
+// checks the pubdate against certain conditions
+async function validatePubdate() {
+  pubDateBtn.setAttribute("disabled",'');
+  let type;
+  let message;
+  // check if articleId is string of 5 numbers
+  const regex = /^\d{5}$/ 
+  if (regex.test(articleId)) {
+    const uri = `https://api.elifesciences.org/articles/${articleId}`;
+    const data = await fetchData(uri);
+    console.log(data);
+    const laxIso = (data.published) ? data.published.split("T")[0] : null;
+    const pubDateXpath = '//article-meta/pub-date[@date-type="pub" or @date-type="publication"]';
+    const xmlPubDate = xml.evaluate(pubDateXpath,xml,nsResolver,9).singleNodeValue;
+    const xmlIso = (xmlPubDate) ? (xmlPubDate.children.length === 3) ? getIso(xmlPubDate) : null : null;
+    if (laxIso) {
+      if (xmlIso) {
+        if (xmlIso === laxIso) {
+          type = "info";
+          message = `xml pub date matches the 
+          <a href="https://doi.org/${data.doi}" target="_blank">${data.status} already published</a>.`;
+        }
+        else {
+          type = "error";
+          message = `xml pub date (${xmlIso}) does not match the 
+          <a href="https://doi.org/${data.doi}" target="_blank">${data.status} already published</a> (${laxIso}).`;
+        }
+      }
+      else {
+        type = "error";
+        message = `No pub date in the xml, but ${data.status} 
+        <a href="https://doi.org/${data.doi}" target="_blank">has been published</a> on ${laxIso}.`;
+      }
+    }
+    else if (xmlIso) {
+      const isoToday = new Date().toISOString().split("T")[0];
+      if (xmlIso < isoToday) {
+        type = "error";
+        message = `This article has not yet been published, but xml pub date is in the past (${xmlIso}). 
+        The pub date needs to be changed to today's date (${isoToday}) at the earliest.`;
+      }
+      else if (xmlIso === isoToday) {
+        type = "info";
+        message = `This article has not yet been published and the xml pub date is today's date (${xmlIso}). 
+        This VOR will need to be published today, or the pub date needs to be changed.`;
+      }
+      else if (!isTuesday(xmlIso)) {
+        type = "warning";
+        message = `This article has not yet been published and the xml pub date is in the future (${xmlIso}), 
+        but it is not on a Tuesday (for Press). Is that correct?`;
+      }
+      else {
+        type = "info";
+        message = `This article has not yet been published and the xml pub date is in the future, on a Tuesday (${xmlIso}).`;
+      }
+    }
+    else {
+      type = "error";
+      message = `No published version and no pub date in the xml.`;
+    }
+  }
+  else {
+    type = "error"; 
+    message = `'${articleId}' is not a valid article id. Cannot validate pub-date.`;
+  }
+  pubdateIcon.setAttribute("src",`../static/${type}.svg`);
+  pubdateText.innerHTML = message;
+  popup.style.visibility = "visible";
+  pubDateBtn.innerHTML = "Validate Pub Date";
+  pubDateBtn.removeAttribute("disabled");
+}
+
+async function fetchData(uri) {
+  console.log(`Fetching data from ${uri}...`);
+  return fetch(uri)
+    .then(res => res.json())
+    .then(json => json)
+    .catch(error => console.log(error))
+}
+
+function getIso(node) {
+  const year = node.getElementsByTagName("year")[0].innerHTML;
+  const month = node.getElementsByTagName("month")[0].innerHTML;
+  const day = node.getElementsByTagName("day")[0].innerHTML;
+  return `${year}-${month}-${day}`
+}
+
+function isTuesday(isoString) {
+  const date = new Date(isoString);
+  return (date.getDay() === 2) ? true : false;
+}
+
+function closePopup() {
+  popup.style.visibility = "hidden";
+}
+
 // EVENT LISTENERS
+
+// validate publication date
+document.querySelector('#pubDateBtn').addEventListener('click',validatePubdate);
+
+// close popup
+document.querySelector('.close').addEventListener('click',closePopup);
 
 // message -> line in editor
 document.querySelectorAll('.message').forEach(td => {

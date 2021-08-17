@@ -295,7 +295,7 @@ function e:upload()
 {
   let $script := <script src="../static/form.js" defer=""></script>
    
-  return e:index($script,<div/>)
+  return e:index($script,<div/>,<div/>)
 };
 
 declare
@@ -333,7 +333,7 @@ as element(html)
                    <script src="../static/form.js" defer=""></script>,
                    <script src="../static/editor.js" defer=""></script>)
                    
-  return e:index($scripts,$container)
+  return e:index($scripts,<div/>,$container)
 };
 
 declare
@@ -347,6 +347,15 @@ as element(html)
   let $xsl := doc('./schematron/final-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
   let $container := <div class="container">
+                      <div id="popup">
+                        <div id="pubdate-message">
+                          <div id="pubdate-icons">
+                            <img id="pubdateIcon"/>
+                            <button class="close"><i class="ri-close-line"></i></button>
+                          </div>
+                          <p id="pubdateText"></p>
+                        </div>
+                      </div>
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
                       </div>
@@ -358,6 +367,7 @@ as element(html)
                         </div>
                       </div>
                     </div>
+  let $button := <button id="pubDateBtn" class="loader">Validate Pub Date</button>
   let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
                    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
                    <script src="../static/codemirror/lib/codemirror.js"></script>,
@@ -371,7 +381,7 @@ as element(html)
                    <script src="../static/form.js" defer=""></script>,
                    <script src="../static/editor.js" defer=""></script>)
   
-   return e:index($scripts,$container)
+   return e:index($scripts,$button,$container)
 };
 
 declare function e:dtd2result($xml) as element(div) {
@@ -502,7 +512,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
 };
 
 declare
-function e:index($scripts as element()*, $elem as element()*) as element(html) {
+function e:index($scripts as element()*, $middle-header-elem as element(), $elem as element()*) as element(html) {
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -524,6 +534,7 @@ function e:index($scripts as element()*, $elem as element()*) as element(html) {
           </a>
           <h1>XML Validator</h1>
         </div>
+        {$middle-header-elem}
         <form id="form1" method="POST" enctype="multipart/form-data">
           <div id="dropContainer" class="form-group">
               <i class="ri-upload-2-line"></i><span id="uploadStatus">Upload XML</span>
@@ -532,8 +543,8 @@ function e:index($scripts as element()*, $elem as element()*) as element(html) {
          <div id="buttons" class="form-group">
             <label>Schematron</label>
             <div>
-              <button id="preBtn" disabled="" formaction="/pre-result">Pre</button>
-              <button id="finalBtn" disabled="" formaction="/final-result">Final</button>
+              <button id="preBtn" class="loader" disabled="" formaction="/pre-result">Pre</button>
+              <button id="finalBtn" class="loader" disabled="" formaction="/final-result">Final</button>
             </div>
           </div>
         </form>

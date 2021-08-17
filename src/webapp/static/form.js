@@ -10,7 +10,7 @@ const animation = (elem,animationType) => {
   elem.classList.toggle(animationType);
   setTimeout(() => {elem.classList.toggle(animationType)}, 1000);
 }
-document.querySelectorAll('button').forEach(item => {
+document.querySelectorAll('.loader').forEach(item => {
   item.addEventListener('click', (e) => {
     e.target.innerHTML = `<span class="spinner"><i class="fa fa-circle-o-notch fa-spin"></i></span> ${e.target.innerHTML}`;
   });
