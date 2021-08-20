@@ -310,6 +310,15 @@ as element(html)
   let $svrl :=  e:transform($xml, $xsl)
   
   let $container := <div class="container">
+                      <div id="popup">
+                        <div id="pubdate-message">
+                          <div id="pubdate-icons">
+                            <img id="pubdateIcon"/>
+                            <button class="close"><i class="ri-close-line"></i></button>
+                          </div>
+                          <p id="pubdateText"></p>
+                        </div>
+                      </div>
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
                       </div>
@@ -320,6 +329,7 @@ as element(html)
                         </div>
                       </div>
                     </div>
+  let $button := <button id="pubDateBtn" class="loader" hidden="">Validate Pub Date</button>
   let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
                    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
                    <script src="../static/codemirror/lib/codemirror.js"></script>,
@@ -333,7 +343,7 @@ as element(html)
                    <script src="../static/form.js" defer=""></script>,
                    <script src="../static/editor.js" defer=""></script>)
                    
-  return e:index($scripts,<div/>,$container)
+  return e:index($scripts,$button,$container)
 };
 
 declare
