@@ -34,8 +34,9 @@ editor.setSize("100%","100%");
 let xml = parseXml();
 // if the root node has a preceding processing-instruction
 let hasPI = document.getElementById("code").innerHTML.startsWith("&lt;?");
-let rootName = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue.nodeName;
-let xmlContent = xml.evaluate('/descendant::article[1]',xml,nsResolver,9).singleNodeValue.outerHTML;
+let root = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue;
+let rootName = root.nodeName;
+let xmlContent = root.outerHTML;
 let articleId = xml.evaluate('/descendant::article[1]//article-meta/article-id[@pub-id-type="publisher-id"]',xml,nsResolver,9).singleNodeValue.innerHTML;
 
 addEditorLines(addBreakPoints);
@@ -195,74 +196,39 @@ function markLine(i) {
   setTimeout(() => {editor.removeLineClass(i,"wrap","mark")}, 2000);
 } 
 
-// checks the pubdate against certain conditions
-async function validatePubdate() {
+/* checks the data available in lax for the article and compares with what's in the xml.
+   The messages are appended to the popup */
+async function validateLaxData() {
   pubDateBtn.setAttribute("disabled",'');
-  let type;
-  let message;
-  // check if articleId is string of 5 numbers
+  let messages = [];
   const regex = /^\d{5}$/ 
   if (regex.test(articleId)) {
     const uri = `https://api.elifesciences.org/articles/${articleId}`;
     const data = await fetchData(uri);
     console.log(data);
-    const laxIso = (data.published) ? data.published.split("T")[0] : null;
-    const pubDateXpath = '//article-meta/pub-date[@date-type="pub" or @date-type="publication"]';
-    const xmlPubDate = xml.evaluate(pubDateXpath,xml,nsResolver,9).singleNodeValue;
-    const xmlIso = (xmlPubDate) ? (xmlPubDate.children.length === 3) ? getIso(xmlPubDate) : null : null;
-    if (laxIso) {
-      if (xmlIso) {
-        if (xmlIso === laxIso) {
-          type = "info";
-          message = `xml pub date matches the 
-          <a href="https://doi.org/${data.doi}" target="_blank">${data.status} already published</a>.`;
-        }
-        else {
-          type = "error";
-          message = `xml pub date (${xmlIso}) does not match the 
-          <a href="https://doi.org/${data.doi}" target="_blank">${data.status} already published</a> (${laxIso}).`;
-        }
-      }
-      else {
-        type = "error";
-        message = `No pub date in the xml, but ${data.status} 
-        <a href="https://doi.org/${data.doi}" target="_blank">has been published</a> on ${laxIso}.`;
-      }
-    }
-    else if (xmlIso) {
-      const isoToday = new Date().toISOString().split("T")[0];
-      if (xmlIso < isoToday) {
-        type = "error";
-        message = `This article has not yet been published, but xml pub date is in the past (${xmlIso}). 
-        The pub date needs to be changed to today's date (${isoToday}) at the earliest.`;
-      }
-      else if (xmlIso === isoToday) {
-        type = "info";
-        message = `This article has not yet been published and the xml pub date is today's date (${xmlIso}). 
-        This VOR will need to be published today, or the pub date needs to be changed.`;
-      }
-      else if (!isTuesday(xmlIso)) {
-        type = "warning";
-        message = `This article has not yet been published and the xml pub date is in the future (${xmlIso}), 
-        but it is not on a Tuesday (for Press). Is that correct?`;
-      }
-      else {
-        type = "info";
-        message = `This article has not yet been published and the xml pub date is in the future, on a Tuesday (${xmlIso}).`;
-      }
-    }
-    else {
-      type = "error";
-      message = `No published version and no pub date in the xml.`;
+    const pubDateObj = validatePubdate(data);
+    messages.push(pubDateObj);
+    if (data.title !== "not found") {
+      const subjectsObj = validateSubjects(data);
+      const authorObj = validateAuthors(data);
+      messages.push(subjectsObj,authorObj);
     }
   }
   else {
-    type = "error"; 
-    message = `'${articleId}' is not a valid article id. Cannot validate pub-date.`;
+    messages.push({"type":"error","message":`'${articleId}' is not a valid article id. Cannot validate against data in lax.`});
   }
-  pubdateIcon.setAttribute("src",`../static/${type}.svg`);
-  pubdateText.innerHTML = message;
-  popup.style.visibility = "visible";
+  messages.forEach((obj) => {
+    const div = document.createElement("div");
+    const icon = document.createElement("img");
+    icon.setAttribute("src",`../static/${obj.type}.svg`);
+    const p = document.createElement("p");
+    p.innerHTML = obj.message;
+    div.appendChild(icon);
+    div.appendChild(p);
+    popupMessage.appendChild(div);
+  })
+  popup.style.display = "block";
+  document.addEventListener('keydown',escClose);
   pubDateBtn.innerHTML = "Validate Pub Date";
   pubDateBtn.removeAttribute("disabled");
 }
@@ -273,6 +239,61 @@ async function fetchData(uri) {
     .then(res => res.json())
     .then(json => json)
     .catch(error => console.log(error))
+}
+
+// checks the pubdate against certain conditions
+function validatePubdate(data) {
+    let obj = {};
+    const laxIso = (data.published) ? data.published.split("T")[0] : null;
+    const pubDateXpath = '//article-meta/pub-date[@date-type="pub" or @date-type="publication"]';
+    const xmlPubDate = xml.evaluate(pubDateXpath,xml,nsResolver,9).singleNodeValue;
+    const xmlIso = (xmlPubDate) ? (xmlPubDate.children.length === 3) ? getIso(xmlPubDate) : null : null;
+    if (laxIso) {
+      if (xmlIso) {
+        if (xmlIso === laxIso) {
+          obj.type = "info";
+          obj.message = `XML pub date matches the 
+          <a href="https://doi.org/${data.doi}" target="_blank">${data.status.toUpperCase()} already published</a>.`;
+        }
+        else {
+          obj.type = "error";
+          obj.message = `XML pub date (${xmlIso}) does not match the 
+          <a href="https://doi.org/${data.doi}" target="_blank">${data.status.toUpperCase()} already published</a> (${laxIso}).`;
+        }
+      }
+      else {
+        obj.type = "error";
+        obj.message = `No pub date in the XML, but ${data.status.toUpperCase()} 
+        <a href="https://doi.org/${data.doi}" target="_blank">has been published</a> on ${laxIso}.`;
+      }
+    }
+    else if (xmlIso) {
+      const isoToday = new Date().toISOString().split("T")[0];
+      if (xmlIso < isoToday) {
+        obj.type = "error";
+        obj.message = `This article has not yet been published, but XML pub date is in the past (${xmlIso}). 
+        The pub date needs to be changed to today's date (${isoToday}) at the earliest.`;
+      }
+      else if (xmlIso === isoToday) {
+        obj.type = "info";
+        obj.message = `This article has not yet been published and the XML pub date is today's date (${xmlIso}). 
+        This VOR will need to be published today, or the pub date needs to be changed.`;
+      }
+      else if (!isTuesday(xmlIso)) {
+        obj.type = "warning";
+        obj.message = `This article has not yet been published and the XML pub date is in the future (${xmlIso}), 
+        but it is not on a Tuesday (for Press). Is that correct?`;
+      }
+      else {
+        obj.type = "info";
+        obj.message = `This article has not yet been published and the XML pub date is in the future, on a Tuesday (${xmlIso}).`;
+      }
+    }
+    else {
+      obj.type = "error";
+      obj.message = `No published version and no pub date in the XML.`;
+    }
+    return obj;
 }
 
 function getIso(node) {
@@ -287,14 +308,62 @@ function isTuesday(isoString) {
   return (date.getDay() === 2) ? true : false;
 }
 
+// checks the subjects in lax against xml
+function validateSubjects(data) {
+  let obj = {};
+  let laxSubjects = [];
+  let xmlSubjects = [];
+  (data.subjects) ? data.subjects.forEach(obj=>laxSubjects.push(obj.name)) : null;
+  const subjectsXpath = '//article-meta/article-categories/subj-group[@subj-group-type="heading"]/subject';
+  const result = xml.evaluate(subjectsXpath,xml,nsResolver,6);
+  for (let i = 0; i < result.snapshotLength; i++) {
+    xmlSubjects.push(result.snapshotItem(i).textContent);
+  }
+  if (laxSubjects.sort().join('')===xmlSubjects.sort().join('')) {
+    obj.type = "info";
+    obj.message = `Published ${data.status.toUpperCase()} and XML MSAs are the same.`;
+  }
+  else {
+    obj.type = "warning";
+    obj.message = `Published ${data.status.toUpperCase()} and XML MSAs are not the same.<br>
+                   <strong>${data.status.toUpperCase()} MSAs</strong>: ${laxSubjects.sort().join('; ')}<br>
+                   <strong>XML MSAs</strong>: ${xmlSubjects.sort().join('; ')}`;
+  }
+  return obj;
+}
+
+// Compares published author count with xml.
+function validateAuthors(data) {
+  let obj = {};
+  const laxAuthorCount = data.authors.length;
+  const authorsXpath = 'count(//article-meta/contrib-group[1]/contrib[@contrib-type="author"])';
+  const xmlAuthorCount = xml.evaluate(authorsXpath,xml,nsResolver,1).numberValue;
+  if (laxAuthorCount === xmlAuthorCount) {
+    obj.type = "info";
+    obj.message = `Published ${data.status.toUpperCase()} has the same number of authors as this XML.`;
+  }
+  else {
+    obj.type = "warning";
+    obj.message = `Published ${data.status.toUpperCase()} has ${laxAuthorCount} authors, whereas this XML has ${xmlAuthorCount}.
+                   Which is correct?`;
+  }
+  return obj;
+}
+
+function escClose(e) {
+  (e.key === "Escape") ? closePopup() : null;
+}
+
 function closePopup() {
-  popup.style.visibility = "hidden";
+  popup.style.display = "none";
+  popupMessage.querySelectorAll('*:not(:first-child)').forEach(elem => elem.remove());
+  document.removeEventListener('keydown',escClose);
 }
 
 // EVENT LISTENERS
 
 // validate publication date
-document.querySelector('#pubDateBtn').addEventListener('click',validatePubdate);
+document.querySelector('#pubDateBtn').addEventListener('click',validateLaxData);
 
 // close popup
 document.querySelector('.close').addEventListener('click',closePopup);

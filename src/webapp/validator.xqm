@@ -310,14 +310,12 @@ as element(html)
   let $svrl :=  e:transform($xml, $xsl)
   
   let $container := <div class="container">
-                      <div id="popup">
-                        <div id="pubdate-message">
-                          <div id="pubdate-icons">
-                            <img id="pubdateIcon"/>
-                            <button class="close"><i class="ri-close-line"></i></button>
-                          </div>
-                          <p id="pubdateText"></p>
-                        </div>
+                     <div id="popup">
+                       <div id="popupMessage">
+                         <div id="popup-icons">
+                           <button class="close"><i class="ri-close-line"></i></button>
+                         </div>
+                       </div>
                       </div>
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
@@ -358,13 +356,11 @@ as element(html)
   let $svrl :=  e:transform($xml, $xsl)
   let $container := <div class="container">
                       <div id="popup">
-                        <div id="pubdate-message">
-                          <div id="pubdate-icons">
-                            <img id="pubdateIcon"/>
-                            <button class="close"><i class="ri-close-line"></i></button>
-                          </div>
-                          <p id="pubdateText"></p>
-                        </div>
+                       <div id="popupMessage">
+                         <div id="popup-icons">
+                           <button class="close"><i class="ri-close-line"></i></button>
+                         </div>
+                       </div>
                       </div>
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
