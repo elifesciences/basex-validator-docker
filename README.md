@@ -56,7 +56,7 @@ Invalid
 jats dtds are included in `webapp/dtds`.
 To add (or replace) dtds, add the files in the correct folder depending on its version and flavour, and update `webapp/dtds/catalogue.xml` with the version/filename (ensuring to include `.dtd`).
 
-dtd version is derived from the `article/@dtd-version` attribute value in the xml file supplied. If there is no such attribute, then `1.2` is the default version.
+dtd version is derived from the `article/@dtd-version` attribute value in the xml file supplied. If there is no such attribute, then `1.3` is the default version.
 
 ## Schematron
 Invalid

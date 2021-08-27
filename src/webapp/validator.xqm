@@ -235,10 +235,10 @@ function e:validate-dtd($data as item()+)
 };
 
 (: get dtd version from dtd-version attribute on root.
-   if the attribute is missing the default version is 1.2 :)
+   if the attribute is missing the default version is 1.3 :)
 declare function e:get-version($xml){
-  if ($xml//*:article/@dtd-version) then $xml//*:article/@dtd-version
-  else '1.2'
+  if (matches($xml//*:article/@dtd-version,'^1\.[0-3]d?[1-9]?$')) then $xml//*:article/@dtd-version
+  else '1.3'
 };
 
 declare function e:get-dtd($version,$type){
