@@ -58,7 +58,7 @@ function parseXml() {
   return xml;
 }
 
-// adds editor line numbers in data-editor-line attribute to trs
+// adds editor line/character numbers in data-editor-line/data-editor-ch attributes to trs
 function addEditorLines(callback) {
   Array.from(document.querySelectorAll("#schematron tbody tr")).forEach((tr) => {
     let xpath = getCellValue(tr,3);
@@ -69,6 +69,8 @@ function addEditorLines(callback) {
         let line = (node.singleNodeValue != null) ? getEditorLine(node) : null;
         if (line == null) {console.log(xpath + ' not found in xml.')};
         tr.setAttribute("data-editor-line",line);
+        let ch = getEditorChar(line,node);
+        tr.setAttribute("data-editor-ch",ch);
       }
       else {
         console.log("'" + xpath + "'" + " is not an XPath. Cannot search or mark Editor for message with id " 
@@ -79,6 +81,7 @@ function addEditorLines(callback) {
   callback();
 }
 
+// Add breakpoints to editor for each of the dtd/schematron messages
 function addBreakPoints() {
   let lineArray = [];
   Array.from(document.querySelectorAll("tbody tr")).forEach((tr) => {
@@ -175,25 +178,27 @@ function scrollToEditor(e) {
   }
   else {
     let line = row.getAttribute('data-editor-line');
+    let ch = row.getAttribute('data-editor-ch') || 0;
     if (!isNaN(line)) {
       line = parseInt(line);
-      jumpToLine(line);
-      editor.setCursor({line,ch:0});
+      jumpToLine(line,ch);
+      editor.setCursor({line,ch});
       markLine(line);
     }
   }
 }
 
 // scrolls to line in editor view
-function jumpToLine(i) { 
-  let t = editor.charCoords({line: i, ch: 0}, "local").top; 
-  let middleHeight = (editor.getScrollerElement().offsetHeight / 2) - 300; 
-  editor.scrollTo(null, t - middleHeight - 10); 
+function jumpToLine(line,ch) {
+  let t = editor.charCoords({line, ch}, "local").top; 
+  let middleHeight = (editor.getScrollerElement().offsetHeight / 2) - 250; 
+  editor.scrollTo(null, t - middleHeight - 10);
 }
+
 // highlights selected line
 function markLine(i) {
   editor.addLineClass(i,"wrap","mark");
-  setTimeout(() => {editor.removeLineClass(i,"wrap","mark")}, 2000);
+  setTimeout(() => {editor.removeLineClass(i,"wrap","mark")}, 1000);
 } 
 
 /* checks the data available in lax for the article and compares with what's in the xml.
@@ -201,8 +206,7 @@ function markLine(i) {
 async function validateLaxData() {
   pubDateBtn.setAttribute("disabled",'');
   let messages = [];
-  const regex = /^\d{5}$/ 
-  if (regex.test(articleId)) {
+  if (/^\d{5}$/.test(articleId)) {
     const uri = `https://api.elifesciences.org/articles/${articleId}`;
     const data = await fetchData(uri);
     console.log(data);
@@ -326,8 +330,8 @@ function validateSubjects(data) {
   else {
     obj.type = "warning";
     obj.message = `Published ${data.status.toUpperCase()} and XML MSAs are not the same.<br>
-                   <strong>${data.status.toUpperCase()} MSAs</strong>: ${laxSubjects.sort().join('; ')}<br>
-                   <strong>XML MSAs</strong>: ${xmlSubjects.sort().join('; ')}`;
+                   <b>${data.status.toUpperCase()} MSAs</b>: ${laxSubjects.sort().join('; ')}<br>
+                   <b>XML MSAs</b>: ${xmlSubjects.sort().join('; ')}`;
   }
   return obj;
 }
@@ -356,7 +360,7 @@ function escClose(e) {
 
 function closePopup() {
   popup.style.display = "none";
-  popupMessage.querySelectorAll('*:not(:first-child)').forEach(elem => elem.remove());
+  popupMessage.querySelectorAll('*:not(:first-child)').forEach(p => p.remove());
   document.removeEventListener('keydown',escClose);
 }
 
@@ -407,6 +411,7 @@ function reorderRows(tbody,tr,i) {
   tbody.appendChild(tr);
 }
 
+// toggle the "complete" status of the row
 function updateRow(e) {
   let row = e.target.parentNode.parentNode;
   row.classList.toggle("completed");
@@ -419,6 +424,12 @@ function updateRow(e) {
   }
 }
 
+/* remove or re-add breakpoint depending on row "complete" status
+    line ~~ int - line in editor
+    type ~~ error, warning, info, null
+    message ~~ dtd/schematron message from the row
+    completedStatus ~~ boolean - if removing or re-adding breakpoint
+*/
 function updateBreakpoint(line,type,message,completedStatus) {
   let breakpointObj = breakpoints.find(obj => {
     return obj.line == line;
@@ -434,6 +445,16 @@ function updateBreakpoint(line,type,message,completedStatus) {
     breakpointObj.messages.push(message);
   }
   addBreakPoint(breakpointObj);
+}
+
+// Get the character that the node starts on in the relevant editor line
+function getEditorChar(line,node) {
+  if (line) {
+    const content = removeNS(node.singleNodeValue.outerHTML.split("\n")[0]).substring(0,200);
+    const editorContent = editor.getLine(line);
+    const ch = editorContent.split(content)[0].length;
+    return (editorContent.length === ch) ? ch - 1: ch;
+  }
 }
 
 function getCellValue(tr, idx) {

@@ -213,7 +213,7 @@ input[type="checkbox"] {
     word-break: break-word;
 }
 .mark {
-    animation: highlight 2000ms ease-out;
+    animation: highlight 1000ms ease-out;
 }
 @keyframes highlight {
     0% {
