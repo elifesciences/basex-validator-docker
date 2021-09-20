@@ -261,7 +261,7 @@ input[type="checkbox"] {
     left:0;
     height: 100%;
     width: 100%;
-    z-index: 7;
+    z-index: 16;
     background-color: rgb(169,169,169,0.6)
 }
 #popupMessage {
