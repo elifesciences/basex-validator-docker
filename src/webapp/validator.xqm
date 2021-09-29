@@ -291,6 +291,7 @@ declare
   %rest:path("/")
   %rest:GET
   %output:method("html")
+  %output:html-version("5.0")
 function e:upload()
 {
   let $script := <script src="../static/form.js" defer=""></script>
@@ -303,6 +304,7 @@ declare
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
   %output:method("html")
+  %output:html-version("5.0")
 function e:validate-pre-result($xml)
 as element(html)
 {  
@@ -349,6 +351,7 @@ declare
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
   %output:method("html")
+  %output:html-version("5.0")
 function e:validate-final-result($xml)
 as element(html)
 {
