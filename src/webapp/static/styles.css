@@ -139,6 +139,9 @@ button[disabled] {
     cursor: col-resize;
     height: 100%;
 }
+#resizer:hover {
+    opacity:0.6; 
+}
 #results {
     margin-left: 10px;
     flex-basis: 45%;
@@ -189,6 +192,9 @@ th {
     background-color: #f3f3f3;
     border-radius:4px;
 }
+th:hover {
+    opacity:0.6; 
+}
 th img {
     height: 20px;
 }
@@ -200,11 +206,20 @@ td {
     border-right: solid 1px #dbdbdb;
     border-bottom: solid 1px #dbdbdb;
 }
+tr.completed td a {
+    pointer-events: none;
+}
+tr:not(.completed) td a:hover {
+    opacity:0.6; 
+}
 .align-middle {
     text-align: center;
 }
 input[type="checkbox"] {
     cursor: default !important;
+}
+tr:not(.completed) input[type="checkbox"]:hover {
+    opacity:0.4; 
 }
 .info .align-middle {
     border-left: 3px solid rgb(58, 136, 238);
@@ -226,6 +241,9 @@ input[type="checkbox"] {
 .message {
     cursor: pointer;
     word-break: break-word;
+}
+tr:not(.completed) td.message:hover {
+    opacity:0.6; 
 }
 .mark {
     animation: highlight 1000ms ease-out;
