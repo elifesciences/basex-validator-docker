@@ -322,6 +322,7 @@ as element(html)
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
                       </div>
+                      <div id="resizer"></div>
                       <div id="results">
                         <div class="table-scroll">
                         {e:dtd2result($xml),
@@ -341,7 +342,8 @@ as element(html)
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
                    <script src="../static/form.js" defer=""></script>,
-                   <script src="../static/editor.js" defer=""></script>)
+                   <script src="../static/editor.js" defer=""></script>,
+                   <script src="../static/resizer.js" defer=""></script>)
                    
   return e:index($scripts,$button,$container)
 };
@@ -368,6 +370,7 @@ as element(html)
                       <div id="editor">
                         <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
                       </div>
+                      <div id="resizer"></div>
                       <div id="results">
                         <div class="table-scroll">
                         {e:dtd2result($xml),
@@ -388,7 +391,8 @@ as element(html)
                    <script src="../static/codemirror/addon/fold/xml-fold.js"></script>,
                    <script src="../static/codemirror/addon/edit/matchtags.js"></script>,
                    <script src="../static/form.js" defer=""></script>,
-                   <script src="../static/editor.js" defer=""></script>)
+                   <script src="../static/editor.js" defer=""></script>,
+                   <script src="../static/resizer.js" defer=""></script>)
   
    return e:index($scripts,$button,$container)
 };
