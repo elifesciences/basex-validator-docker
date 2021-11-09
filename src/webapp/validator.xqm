@@ -330,7 +330,7 @@ as element(html)
                         </div>
                       </div>
                     </div>
-  let $button := <button id="pubDateBtn" class="loader" hidden="">Validate Pub Date</button>
+  let $button := <button id="pubDateBtn" class="loader" hidden="">Check published data</button>
   let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
                    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
                    <script src="../static/codemirror/lib/codemirror.js"></script>,
@@ -379,7 +379,7 @@ as element(html)
                         </div>
                       </div>
                     </div>
-  let $button := <button id="pubDateBtn" class="loader">Validate Pub Date</button>
+  let $button := <button id="pubDateBtn" class="loader">Check published data</button>
   let $scripts := (<link href="../static/codemirror/lib/codemirror.css" rel="stylesheet"/>,
                    <link href="../static/codemirror/addon/dialog/dialog.css" rel="stylesheet"/>,
                    <script src="../static/codemirror/lib/codemirror.js"></script>,

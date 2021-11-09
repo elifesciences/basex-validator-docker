@@ -38,6 +38,7 @@ let root = xml.evaluate('/*',xml,nsResolver,9).singleNodeValue;
 let rootName = root.nodeName;
 let xmlContent = root.outerHTML;
 let articleId = xml.evaluate('/descendant::article[1]//article-meta/article-id[@pub-id-type="publisher-id"]',xml,nsResolver,9).singleNodeValue.innerHTML;
+let articleType = xml.evaluate('/descendant::article[1]/@article-type',xml,nsResolver,9).singleNodeValue.value;
 
 addEditorLines(addBreakPoints);
 
@@ -221,6 +222,39 @@ async function validateLaxData() {
   else {
     messages.push({"type":"error","message":`'${articleId}' is not a valid article id. Cannot validate against data in lax.`});
   }
+  if (articleType === "correction" || articleType === "retraction") {
+    const relatedArticle = xml.evaluate('/descendant::article[1]//article-meta/related-article/@xlink:href',xml,nsResolver,9);
+    if (relatedArticle.singleNodeValue) {
+      const relatedArticleDoi = relatedArticle.singleNodeValue.value;
+      const relatedArticleId = relatedArticleDoi.split("ife.")[1]
+      const box = xml.evaluate('/descendant::article[1]/body[1]/boxed-text[1]',xml,nsResolver,9)
+      if (/^\d{5}$/.test(relatedArticleId)) {
+        const relatedUri = `https://api.elifesciences.org/articles/${relatedArticleId}`;
+        const relatedData = await fetchData(relatedUri);
+        const relatedAuthArr = relatedData.authors.map(a =>
+          a.name.index.split(",")[0].concat(' ').concat(a.name.index.split(",")[1].replace(/[^(?<=\s)A-ZÀ-ÝĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮİIĲĴĶĹĻĽĿŁŃŅŇNŊŌŎ0ŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŸŹŻŽ\-]/g,'').replace(/\s+/g,'')));
+        const relatedTitle = relatedData.title.replace(/<\/?.*?>/g,'')
+        const relatedPubDate = new Date(relatedData.published);
+        const relatedPubYear = relatedPubDate.getFullYear();
+        const relatedPubMonth = relatedPubDate.toLocaleString('default', { month: 'long' });
+        const relatedPubDay = relatedPubDate.getDate();
+        const generatedBoxText = `${relatedAuthArr.join(', ')}. ${relatedPubYear}. ${relatedTitle}. eLife ${relatedData.volume}:${relatedData.elocationId}. doi: ${relatedData.doi}. Published ${relatedPubDay}, ${relatedPubMonth} ${relatedPubYear}`
+        if (box.singleNodeValue) {
+          const boxText = box.singleNodeValue.textContent.replace(/\s+/g,' ').trim();
+          console.log(boxText);
+          console.log(generatedBoxText);
+          if (generatedBoxText == boxText) {
+            messages.push({"type":"info","message":`box text is correct based on the published data for the related article`});
+          }
+          else {messages.push({"type":"error","message":`box text is incorrect based on the published data for the related article. The text should be '${generatedBoxText}'`});}
+        }
+        else {messages.push({"type":"error","message":`No boxed text within article to check against`});}
+      }
+      else {messages.push({"type":"error","message":`related article doi is not a proper eLife doi ${relatedArticleDoi}`});}
+    }
+    else {messages.push({"type":"error","message":`${articleType} article type, but no related article`});}
+  }
+  else {console.log(`${articleType} article type, so no related article`)}
   messages.forEach((obj) => {
     const div = document.createElement("div");
     const icon = document.createElement("img");
@@ -233,7 +267,7 @@ async function validateLaxData() {
   })
   popup.style.display = "block";
   document.addEventListener('keydown',escClose);
-  pubDateBtn.innerHTML = "Validate Pub Date";
+  pubDateBtn.innerHTML = "Check published data";
   pubDateBtn.removeAttribute("disabled");
 }
 
