@@ -538,7 +538,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
       let $json := try {
                  http:send-request(
                  <http:request method='get' href="{('https://api.ror.org/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
-                   <http:header name="From" value="production@elifesciences.org"/>Z
+                   <http:header name="From" value="production@elifesciences.org"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
       where (number($json//*:number__of__results) gt 0) and $json//_[number(*:score[1]) ge 0.8]
