@@ -326,7 +326,7 @@ as element(html)
                       <div id="results">
                         <div class="table-scroll">
                         {e:dtd2result($xml),
-                        e:svrl2result($svrl)}
+                        e:svrl2result($xml,$svrl)}
                         </div>
                       </div>
                     </div>
@@ -375,7 +375,7 @@ as element(html)
                         <div class="table-scroll">
                         {e:dtd2result($xml),
                          if ($xml//*:media[@mimetype="video"]) then (e:svrl2result-video($xml,$svrl))
-                         else e:svrl2result($svrl)}
+                         else e:svrl2result($xml,$svrl)}
                         </div>
                       </div>
                     </div>
@@ -425,11 +425,12 @@ declare function e:dtd2result($xml) as element(div) {
          </div>
 };
 
-declare function e:svrl2result($svrl) as element(div) {
+declare function e:svrl2result($xml,$svrl) as element(div) {
   let $image-name := if ($svrl//*[@role="error"]) then 'error'
                      else if ($svrl//*[@role="warning"]) then 'warning'
                      else if ($svrl//*[@role="info"]) then 'info'
                      else 'valid'
+  let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
     <thead>
       <tr>
@@ -440,7 +441,7 @@ declare function e:svrl2result($svrl) as element(div) {
       <th>Message</th>
     </tr>    
     </thead>
-    <tbody>{e:get-table-rows($svrl)}</tbody>
+    <tbody>{$ror-rows,e:get-table-rows($svrl)}</tbody>
 </table>
   
   return <div id="schematron">
@@ -456,7 +457,8 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
 {
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
-  let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml) 
+  let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
+  let $ror-rows := e:get-ror-rows($xml)
   let $table-rows := e:get-table-rows($svrl)       
   let $table := <table>
    <thead>
@@ -469,7 +471,7 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
       </tr>
    </thead>
    <tbody>
-     {($glencoe-rows,$table-rows)}
+     {($glencoe-rows,$ror-rows,$table-rows)}
    </tbody>
 </table>
   
@@ -522,6 +524,60 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                   <td class="xpath" hidden="">{e:getXpath($vid)}</td>
                   <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>)
+};
+
+declare function e:get-ror-rows($xml) as element(tr)* {
+  let $non-ror-count := count($xml//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution])
+  let $isEvenTotal := $non-ror-count mod 2 = 0
+  (: If there are <= 100 affiliations without RORs :)
+  return if ($non-ror-count le 100) then (
+    for $result at $pos in (
+      for $aff in $xml//*:article-meta//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution]
+      let $xpath := e:getXpath($aff)
+      let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content'))],', ')
+      let $json := try {
+                 http:send-request(
+                 <http:request method='get' href="{('https://api.ror.org/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
+                   <http:header name="From" value="production@elifesciences.org"/>Z
+                 </http:request>)//*:json}
+               catch * {<json><number__of__results>0</number__of__results></json>}
+      where (number($json//*:number__of__results) gt 0) and $json//_[number(*:score[1]) ge 0.8]
+      let $results := for $res in (
+                                for $y in $json//_[number(*:score[1]) ge 0.8]
+                                order by $y/*:score[1] descending
+                                return $y)[position() lt 4]
+                        let $a := <a href="{$res/*:organization/*:id}" target="_blank">{$res/*:organization/*:name}</a>
+                        return ($a,' (Closeness score '||$res/*:score[1]||')')
+      return <wrap>
+               <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+               <td>Warning</td>
+               <td>ror-api-check</td>
+               <td class="xpath" hidden="">{$xpath}</td>
+               <td class="message">The affiliation {$display} does not have a ROR ID. However possible ROR IDs are: {$results}</td>
+             </wrap>)
+    (: get the correct colour for the row based on the number of results returned.
+     since these are placed ontop of existing schematron results:
+      even total = odd, even, odd etc.
+      odd total = even, odd, even etc. :)
+    let $isEven := $pos mod 2 = 0
+    let $type := if ($isEvenTotal) then (
+                  if ($isEven) then 'even'
+                  else 'odd'
+               )
+               else (
+                 if ($isEven) then 'odd'
+                 else 'even' 
+               )
+    return <tr class="{'warning '||$type}">{$result/*}</tr>
+  )
+  (: If there are > 100 affiliations without RORs :)
+  else <tr class="info odd">
+         <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+         <td>Info</td>
+         <td>ror-api-check</td>
+         <td class="xpath" hidden="">/article[1]</td>
+         <td class="message">{'Too many affiliations without ROR ids ('||$non-ror-count||') to check against the ROR API'}</td>
+       </tr>
 };
 
 declare
