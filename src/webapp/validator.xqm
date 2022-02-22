@@ -532,7 +532,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
   (: If there are <= 100 affiliations without RORs :)
   return if ($non-ror-count le 100) then (
     for $result at $pos in (
-      for $aff in $xml//*:article-meta//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution]
+      for $aff in $xml//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution and (ancestor::*:article-meta or ancestor::*:contrib[@contrib-type="reviewer"] or ancestor::*:contrib[@contrib-type="author" and role[@specific-use="referee"]])]
       let $xpath := e:getXpath($aff)
       let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content'))],', ')
       let $json := try {
