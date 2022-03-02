@@ -135,10 +135,10 @@ declare function e:svrl2json($svrl)
           ,','),
         ']'
       )
-      
+  let $status := if ($svrl//*[@role="error"]) then "invalid" else "valid"   
   let $json :=  
     concat(
-      '{
+      '{"status":"',$status,'",
         "results": {',
       $errors,
       ',',

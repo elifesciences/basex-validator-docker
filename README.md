@@ -18,6 +18,8 @@ curl -F xml=@somexmlfile.xml http://localhost:8984/dtd
 curl -F xml=@somexmlfile.xml -F "type=publishing" http://localhost:8984/dtd
 ``` 
 
+An example Schematron file is provided in (src/webapp/schematron)[https://github.com/elifesciences/basex-validator-docker/tree/vanilla/src/webapp/schematron].
+
 ## dtd
 Post xml and receive dtd validation in json format.
 
@@ -58,6 +60,7 @@ dtd version is derived from the `article/@dtd-version` attribute value in the xm
 Invalid
 ```json
 {
+  "status":"invalid",
   "results":{
     "errors":[
       {
@@ -85,6 +88,7 @@ Invalid
 Valid with warnings
 ```json
 {
+  "status":"valid",
   "results":{
     "errors":[
     ],
