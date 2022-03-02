@@ -19,6 +19,10 @@
                 see="https://www.schematron.com/"
                 id="example-check">Every p element must contain an italic element. This one does not.</assert>
             
+            <report test="bold"
+                role="warning"
+                see="https://www.schematron.com/"
+                id="example-check-2">p element should not contain a bold element.</report>
         </rule>
     </pattern>
     

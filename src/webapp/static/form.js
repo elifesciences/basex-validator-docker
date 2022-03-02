@@ -1,10 +1,8 @@
 const disableBtn = () => {
   preBtn.setAttribute('disabled','');
-  finalBtn.setAttribute('disabled','');
 }
 const enableBtn = () => {
   preBtn.hasAttribute("disabled") ? preBtn.removeAttribute('disabled') : null;
-  finalBtn.hasAttribute("disabled") ? finalBtn.removeAttribute('disabled'): null;
 }
 const animation = (elem,animationType) => {
   elem.classList.toggle(animationType);

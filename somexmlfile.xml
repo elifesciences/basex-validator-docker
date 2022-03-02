@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD with MathML3 v1.2 20190208//EN" "JATS-archivearticle1-mathml3.dtd">
+<article xmlns:ali="http://www.niso.org/schemas/ali/1.0/" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" article-type="research-article" dtd-version="1.2">
+    <front>
+        <article-meta>
+            <title-group>
+                <article-title>Some XML file</article-title>
+            </title-group>
+        </article-meta>
+    </front>
+    <body>
+        <p>This p element doesn not contain italics</p>
+        <p>This one does <italic/></p>
+        <p>This p element contains bold and italic <bold/><italic/></p>
+    </body>
+    <!-- delibrately DTD invalid element -->
+    <bark/>
+</article>    
