@@ -2,9 +2,9 @@
 
 A docker contatiner that can be used to validate xml against dtd and schematron.
 
-An example schematron file is provided in (src/webapp/schematron)[https://github.com/elifesciences/basex-validator-docker/tree/vanilla/src/webapp/schematron].
+An example schematron file is provided in [src/webapp/schematron](https://github.com/elifesciences/basex-validator-docker/tree/vanilla/src/webapp/schematron).
 
-An (example xml)[https://github.com/elifesciences/basex-validator-docker/blob/vanilla/somexmlfile.xml] file is provided to validate. 
+An [example xml](https://github.com/elifesciences/basex-validator-docker/blob/vanilla/somexmlfile.xml) file is provided to validate. 
 
 ## Getting Started
 
