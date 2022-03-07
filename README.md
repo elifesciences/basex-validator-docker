@@ -14,10 +14,11 @@ docker build . --tag basex-validator
 docker run --rm --memory="1g" -p 1984:1984 -p 8984:8984 basex-validator
 ```
 
-You can then interact with the service on port 8984 for example using cURL, for example...
+You can then interact with the service on port 8984 for example using cURL...
 
 ```
 curl -F xml=@somexmlfile.xml http://localhost:8984/schematron
+curl -F xml=@somexmlfile.xml http://localhost:8984/xsd
 curl -F xml=@somexmlfile.xml http://localhost:8984/dtd
 curl -F xml=@somexmlfile.xml -F "type=publishing" http://localhost:8984/dtd
 ``` 
@@ -61,6 +62,30 @@ jats dtds are included in `webapp/dtds`.
 To add (or replace) dtds, add the files in the correct folder depending on its version and flavour, and update `webapp/dtds/catalogue.xml` with the version/filename (ensuring to include `.dtd`).
 
 dtd version is derived from the `article/@dtd-version` attribute value in the xml file supplied. If there is no such attribute, then `1.3` is the default version.
+
+## xml schema (xsd)
+Post xml and receive xsd validation in json format.
+
+Valid
+```json
+{
+  "status":"valid"
+}
+```
+
+Invalid
+```json
+{
+  "status":"invalid",
+  "errors":[
+    {
+      "line":"18",
+      "column":"12",
+      "message":"cvc-complex-type.2.4.a: Invalid content was found starting with element 'bark'. One of '{back}' is expected."
+    }
+  ]
+}
+```
 
 ## schematron
 Invalid

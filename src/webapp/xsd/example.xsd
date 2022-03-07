@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xml="http://www.w3.org/XML/1998/namespace" elementFormDefault="qualified">
+    
+    
+    <xs:element name="front"/>
+    <xs:element name="body"/>
+    <xs:element name="back"/>
+    
+    <xs:attribute name="article-type" type="xs:string"/>
+    <xs:attribute name="dtd-version" type="xs:string"/>
+    
+    <xs:element name="article">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="front"/>
+                <xs:element ref="body"/>
+                <xs:element ref="back"/>
+            </xs:sequence>
+            <xs:attribute ref="article-type" use="required"/>
+            <xs:attribute ref="dtd-version" use="required"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

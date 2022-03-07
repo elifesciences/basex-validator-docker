@@ -60,8 +60,8 @@ declare function e:get-version($xml){
 };
 
 declare function e:get-dtd($version,$type){
-  let $cat := doc(file:base-dir()||'dtds/catalogue.xml')
-  let $dtd-folder := file:base-dir()||'dtds/'||$type||'/'
+  let $cat := doc(file:base-dir()||'dtd/catalogue.xml')
+  let $dtd-folder := file:base-dir()||'dtd/'||$type||'/'
   return
   switch ($type)
       case "publishing" return let $dtd-file := $cat//*:publishing/*:dtd[@version=$version]/@uri
@@ -77,6 +77,33 @@ declare function e:dtd2json($report){
    if ($report//*:status/text() = 'valid') then json:parse('{"status": "valid"}')
    else json:parse(concat(
        '{"status": "invalid",',
+       '"errors": [', 
+       string-join(for $error in $report//*:message
+                     return ('{'||
+                            ('"line": "'||$error/@line/string()||'",')||
+                            ('"column": "'||$error/@column/string()||'",')||
+                            ('"message": "'||replace($error/data(),'"',"'")||'"')||
+                            '}')
+                   ,','),
+       ']}'))
+};
+
+(: XSD :)
+declare
+  %rest:path("/xsd")
+  %rest:POST("{$xml}")
+  %input:text("xml","encoding=UTF-8")
+  %output:method("json")
+function e:validate-xsd($xml){
+  let $xsd := file:base-dir()||'xsd/'||'example.xsd'
+  let $report :=  validate:xsd-report($xml,$xsd)
+  return e:xsdReport2json($report)
+};
+
+declare function e:xsdReport2json($report){
+  if ($report//*:status/text() = 'valid') then json:parse('{"status": "valid"}')
+  else json:parse(concat(
+       '{"status": "',$report/*:status,'",',
        '"errors": [', 
        string-join(for $error in $report//*:message
                      return ('{'||
