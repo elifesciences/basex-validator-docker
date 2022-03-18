@@ -238,7 +238,7 @@ async function validateLaxData() {
         const relatedPubYear = relatedPubDate.getFullYear();
         const relatedPubMonth = relatedPubDate.toLocaleString('default', { month: 'long' });
         const relatedPubDay = relatedPubDate.getDate();
-        const generatedBoxText = `${relatedAuthArr.join(', ')}. ${relatedPubYear}. ${relatedTitle}. eLife ${relatedData.volume}:${relatedData.elocationId}. doi: ${relatedData.doi}. Published ${relatedPubDay}, ${relatedPubMonth} ${relatedPubYear}`
+        const generatedBoxText = `${relatedAuthArr.join(', ')}. ${relatedPubYear}. ${relatedTitle}. eLife ${relatedData.volume}:${relatedData.elocationId}. doi: ${relatedData.doi}. Published ${relatedPubDay} ${relatedPubMonth} ${relatedPubYear}`
         if (box.singleNodeValue) {
           const boxText = box.singleNodeValue.textContent.replace(/\s+/g,' ').trim();
           console.log(boxText);
