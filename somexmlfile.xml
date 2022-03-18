@@ -12,6 +12,6 @@
         <p>This one does <italic/></p>
         <p>This p element contains bold and italic <bold/><italic/></p>
     </body>
-    <!-- delibrately DTD invalid element -->
+    <!-- deliberately DTD/XSD invalid element -->
     <bark/>
 </article>
