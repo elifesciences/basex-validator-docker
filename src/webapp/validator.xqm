@@ -426,10 +426,8 @@ declare function e:dtd2result($xml) as element(div) {
 };
 
 declare function e:svrl2result($xml,$svrl) as element(div) {
-  let $image-name := if ($svrl//*[@role="error"]) then 'error'
-                     else if ($svrl//*[@role="warning"]) then 'warning'
-                     else if ($svrl//*[@role="info"]) then 'info'
-                     else 'valid'
+  let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
+  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event) else ()
   let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
     <thead>
@@ -441,9 +439,13 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
       <th>Message</th>
     </tr>    
     </thead>
-    <tbody>{$ror-rows,e:get-table-rows($svrl)}</tbody>
+    <tbody>{$preprint-rows,$ror-rows,e:get-table-rows($svrl)}</tbody>
 </table>
   
+  let $image-name := if ($table//*:tr[contains(@class,'error')]) then "error"
+                     else if ($table//*:tr[contains(@class,'warning')]) then "warning"
+                     else if ($table//*:tr[contains(@class,'info')]) then "info"
+                     else "valid"
   return <div id="schematron">
           <div class="status">
             <img src="{('../static/'||$image-name||'.svg')}" class="results-status"/>
@@ -458,6 +460,8 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
+  let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
+  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event) else ()
   let $ror-rows := e:get-ror-rows($xml)
   let $table-rows := e:get-table-rows($svrl)       
   let $table := <table>
@@ -471,15 +475,14 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
       </tr>
    </thead>
    <tbody>
-     {($glencoe-rows,$ror-rows,$table-rows)}
+     {($glencoe-rows,$preprint-rows,$ror-rows,$table-rows)}
    </tbody>
 </table>
   
-  let $image-name := if ($glencoe-rows//*:tr[@class="error"]) then 'error'
-                     else if ($svrl//*[@role="error"]) then 'error'
-                     else if ($svrl//*[@role="warning"]) then 'warning'
-                     else if ($svrl//*[@role="info"]) then 'info'
-                     else 'valid'
+  let $image-name := if ($table//*:tr[contains(@class,'error')]) then "error"
+                     else if ($table//*:tr[contains(@class,'warning')]) then "warning"
+                     else if ($table//*:tr[contains(@class,'info')]) then "info"
+                     else "valid"
    
    return <div id="schematron">
             <div class="status">
@@ -578,6 +581,69 @@ declare function e:get-ror-rows($xml) as element(tr)* {
          <td class="xpath" hidden="">/article[1]</td>
          <td class="message">{'Too many affiliations without ROR ids ('||$non-ror-count||') to check against the ROR API'}</td>
        </tr>
+};
+
+declare function e:get-preprint-rows($event) as element(tr)* {
+  let $iso-xml-date := $event/*:date/@iso-8601-date
+  let $preprint-link := $event/*:self-uri[@content-type="preprint"]/@*:href
+  let $doi := if (matches($preprint-link,'^https://doi.org/')) then (replace($preprint-link,'^https://doi.org/','')) 
+              else $preprint-link
+  let $response := e:get-crossref-res($doi)
+  let $iso-date := $response/@iso-date
+  return switch($response/@status)
+           case "200" return (
+                  if ($iso-date=$iso-xml-date) then (
+                        <tr class="info odd">
+                           <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                           <td>Info</td>
+                           <td>preprint-doi-date</td>
+                           <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+                           <td class="message">{("Preprint date in the XML ("||$iso-date||") matches the details registered at Crossref.")}</td>
+                       </tr>
+                      )
+                  else (<tr class="error odd">
+                         <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                         <td>Error</td>
+                         <td>preprint-doi-date</td>
+                         <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+                         <td class="message">{("Preprint date in the XML does not match the details at Crossref. XML has '"||$iso-xml-date||"' whereas Crossref has '"||$iso-date,"'. (",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,")")}</td>
+                       </tr>)
+         )
+         case "404" return (
+           <tr class="warning odd">
+             <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+             <td>Warning</td>
+             <td>preprint-doi-date</td>
+             <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+             <td class="message">{("Preprint DOI '",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,"' not found in Crossref. Is it correct? Some preprint servers use separate DOI minting services.")}</td>
+       </tr>
+         )
+         default return (<tr class="warning odd">
+                           <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                           <td>Warning</td>
+                           <td>preprint-doi-date</td>
+                           <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+                           <td class="message">{("Something went wrong with the request for preprint details from Crossref. Status: "||$response/@status/string()||" Message: "||$response/@message/string())}</td>
+                         </tr>)
+};
+
+declare function e:get-crossref-res($doi) as element(res){
+  let $head-res := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||$doi||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
+                   catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}"/>}
+  let $status := $head-res/@status/string()
+  return if ($status="200") then (
+                        let $json := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||$doi||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
+                                     catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><posted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></posted></json>}
+                        let $date-parts := $json//*:json//*:posted/*:date-parts/_
+                        let $iso-date := string-join(for $t at $p in $date-parts/_ 
+                                           order by $p ascending 
+                                           return if (string-length($t)=1) then '0'||$t
+                                                  else $t
+                                           ,'-') 
+                        return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}"/>
+                               else <res status="{$status}" message="{$json/@message/string()}" iso-date="{$iso-date}"/>
+                        )
+        else <res status="{$status}" message="{$head-res/@message/string()}" iso-date=""/>
 };
 
 declare
