@@ -588,17 +588,28 @@ declare function e:get-preprint-rows($event) as element(tr)* {
   let $preprint-link := $event/*:self-uri[@content-type="preprint"]/@*:href
   let $doi := if (matches($preprint-link,'^https://doi.org/')) then (replace($preprint-link,'^https://doi.org/','')) 
               else $preprint-link
-  let $response := e:get-crossref-res($doi)
+  let $response := if (matches($doi,'^10\.\d{4,9}/[-._;()/:A-Za-z0-9&lt;&gt;\+#&amp;&apos;`~–−]+$')) then e:get-doi-api-res($doi)
+                   else <res status="Not sent" message="{($doi||' is not a proper doi, so the preprint pub date cannot be verified.')}" iso-date=""/>
+  let $source := $response/@source/string()
   let $iso-date := $response/@iso-date
   return switch($response/@status)
            case "200" return (
-                  if ($iso-date=$iso-xml-date) then (
+                  if ($iso-date='') then (
+                    <tr class="info odd">
+                           <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                           <td>Warning</td>
+                           <td>preprint-doi-date</td>
+                           <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+                           <td class="message">{("Preprint is registered at "||$source||" but they do not have a full published date in the metadata. Check the date of the preprint here: ",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>," to see if it matches the XML date: "||$iso-xml-date||".")}</td>
+                       </tr>
+                  )
+                  else if ($iso-date=$iso-xml-date) then (
                         <tr class="info odd">
                            <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
                            <td>Info</td>
                            <td>preprint-doi-date</td>
                            <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
-                           <td class="message">{("Preprint date in the XML ("||$iso-date||") matches the details registered at Crossref.")}</td>
+                           <td class="message">{("Preprint date in the XML ("||$iso-date||") matches the details registered at "||$source||".")}</td>
                        </tr>
                       )
                   else (<tr class="error odd">
@@ -606,7 +617,7 @@ declare function e:get-preprint-rows($event) as element(tr)* {
                          <td>Error</td>
                          <td>preprint-doi-date</td>
                          <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
-                         <td class="message">{("Preprint date in the XML does not match the details at Crossref. XML has '"||$iso-xml-date||"' whereas Crossref has '"||$iso-date,"'. (",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,")")}</td>
+                         <td class="message">{("Preprint date in the XML does not match the details at "||$source||". XML has '"||$iso-xml-date||"' whereas "||$source||" has '"||$iso-date,"'. (",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,")")}</td>
                        </tr>)
          )
          case "404" return (
@@ -615,7 +626,7 @@ declare function e:get-preprint-rows($event) as element(tr)* {
              <td>Warning</td>
              <td>preprint-doi-date</td>
              <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
-             <td class="message">{("Preprint DOI '",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,"' not found in Crossref. Is it correct? Some preprint servers use separate DOI minting services.")}</td>
+             <td class="message">{("Preprint DOI '",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,"' not found at crossref or datacite. Is it correct? Some preprint servers use separate DOI minting services.")}</td>
        </tr>
          )
          default return (<tr class="warning odd">
@@ -623,16 +634,17 @@ declare function e:get-preprint-rows($event) as element(tr)* {
                            <td>Warning</td>
                            <td>preprint-doi-date</td>
                            <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
-                           <td class="message">{("Something went wrong with the request for preprint details from Crossref. Status: "||$response/@status/string()||" Message: "||$response/@message/string())}</td>
+                           <td class="message">{("Something went wrong with the request for preprint details from "||$source||". Status: "||$response/@status/string()||" Message: "||$source)}</td>
                          </tr>)
 };
 
-declare function e:get-crossref-res($doi) as element(res){
-  let $head-res := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||$doi||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
-                   catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}"/>}
+declare function e:get-doi-api-res($doi) as element(res){
+  (: Try crossref head-only first :)
+  let $head-res := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
+                   catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}" source="basex"/>}
   let $status := $head-res/@status/string()
   return if ($status="200") then (
-                        let $json := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||$doi||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
+                        let $json := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
                                      catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><posted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></posted></json>}
                         let $date-parts := $json//*:json//*:posted/*:date-parts/_
                         let $iso-date := string-join(for $t at $p in $date-parts/_ 
@@ -640,10 +652,29 @@ declare function e:get-crossref-res($doi) as element(res){
                                            return if (string-length($t)=1) then '0'||$t
                                                   else $t
                                            ,'-') 
-                        return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}"/>
-                               else <res status="{$status}" message="{$json/@message/string()}" iso-date="{$iso-date}"/>
+                        return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}" source="basex"/>
+                               else <res status="{$status}" message="{$json/@message/string()}" iso-date="{$iso-date}" source="crossref"/>
                         )
-        else <res status="{$status}" message="{$head-res/@message/string()}" iso-date=""/>
+        else if ($status="404") then (
+          (: If not found at Crossref, then try DataCite :)
+          let $head-res := try {http:send-request(<http:request method="get" href="{'https://api.datacite.org/dois/'||web:encode-url($doi)}" timeout="1" status-only="true"/>)}
+                        catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}"/>}
+           let $status := $head-res/@status/string()
+           return if ($status="200") then (
+               (: If found at DataCite :)
+               let $json := try {http:send-request(<http:request method="get" href="{'https://api.datacite.org/dois/'||web:encode-url($doi)}" timeout="2"/>)}
+                            catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><dates><_><date>1970-01-01T</date><dateType>Submitted</dateType></_></dates></json>}
+               let $date := $json//*:dates/_[dateType='Submitted'][1]/date/substring-before(.,'T')
+               return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}" source="basex"/>
+                      else if (matches($date,'\d{4}-\d{2}-\d{2}')) 
+                         then <res status="{$status}" message="{$head-res/@message/string()}" iso-date="{$date}" source="dataCite"/>
+                      else <res status="{$status}" message="{$head-res/@message/string()}" iso-date="" source="dataCite"/>
+                  )
+                  (: If not found at DataCite or there was some other error :)
+                  else <res status="{$status}" message="{$head-res/@message/string()}" iso-date="" source="dataCite"/>
+            )
+        (: Some other error at Crossref :)
+        else <res status="{$status}" message="{$head-res/@message/string()}" iso-date="" source="crossref"/>
 };
 
 declare
