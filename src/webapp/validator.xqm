@@ -426,7 +426,7 @@ declare function e:dtd2result($xml) as element(div) {
 };
 
 declare function e:svrl2result($xml,$svrl) as element(div) {
-  let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
+  let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint" and @*:href!='']][1]
   let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event) else ()
   let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
