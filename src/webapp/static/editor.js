@@ -207,7 +207,7 @@ function markLine(i) {
 async function validateLaxData() {
   pubDateBtn.setAttribute("disabled",'');
   let messages = [];
-  if (/^\d{5}$/.test(articleId)) {
+  if (/^\d{5,6}$/.test(articleId)) {
     const uri = `https://api.elifesciences.org/articles/${articleId}`;
     const data = await fetchData(uri);
     console.log(data);
@@ -228,7 +228,7 @@ async function validateLaxData() {
       const relatedArticleDoi = relatedArticle.singleNodeValue.value;
       const relatedArticleId = relatedArticleDoi.split("ife.")[1]
       const box = xml.evaluate('/descendant::article[1]/body[1]/boxed-text[1]',xml,nsResolver,9)
-      if (/^\d{5}$/.test(relatedArticleId)) {
+      if (/^\d{5,6}$/.test(relatedArticleId)) {
         const relatedUri = `https://api.elifesciences.org/articles/${relatedArticleId}`;
         const relatedData = await fetchData(relatedUri);
         const relatedAuthArr = relatedData.authors.map(a =>
