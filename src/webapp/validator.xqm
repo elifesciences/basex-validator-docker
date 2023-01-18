@@ -165,6 +165,11 @@ declare function e:get-message($node){
   else e:json-escape(data($node))
 };
 
+declare function e:is-prc($xml) as xs:boolean{
+  if ($xml//*:article[1]//*:article-meta/*:custom-meta-group/*:custom-meta[*:meta-name='publishing-route']/*:meta-value='prc') then true()
+  else false()
+};
+
 declare function e:get-glencoe($doi){
   try {
     http:send-request(
@@ -426,8 +431,9 @@ declare function e:dtd2result($xml) as element(div) {
 };
 
 declare function e:svrl2result($xml,$svrl) as element(div) {
+  let $is-prc := e:is-prc($xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint" and @*:href!='']][1]
-  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event) else ()
+  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
   let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
     <thead>
@@ -457,11 +463,12 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
 
 declare function e:svrl2result-video($xml,$svrl) as element(div)*
 {
+  let $is-prc := e:is-prc($xml)
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
-  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event) else ()
+  let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
   let $ror-rows := e:get-ror-rows($xml)
   let $table-rows := e:get-table-rows($svrl)       
   let $table := <table>
@@ -583,12 +590,12 @@ declare function e:get-ror-rows($xml) as element(tr)* {
        </tr>
 };
 
-declare function e:get-preprint-rows($event) as element(tr)* {
+declare function e:get-preprint-rows($event as element()*, $is-prc as xs:boolean) as element(tr)* {
   let $iso-xml-date := $event/*:date/@iso-8601-date
   let $preprint-link := $event/*:self-uri[@content-type="preprint"]/@*:href
   let $doi := if (matches($preprint-link,'^https://doi.org/')) then (replace($preprint-link,'^https://doi.org/','')) 
               else $preprint-link
-  let $response := if (matches($doi,'^10\.\d{4,9}/[-._;()/:A-Za-z0-9&lt;&gt;\+#&amp;&apos;`~–−]+$')) then e:get-doi-api-res($doi)
+  let $response := if (matches($doi,'^10\.\d{4,9}/[-._;()/:A-Za-z0-9&lt;&gt;\+#&amp;&apos;`~–−]+$')) then e:get-doi-api-res($doi,$is-prc)
                    else <res status="Not sent" message="{($doi||' is not a proper doi, so the preprint pub date cannot be verified.')}" iso-date=""/>
   let $source := $response/@source/string()
   let $iso-date := $response/@iso-date
@@ -612,6 +619,15 @@ declare function e:get-preprint-rows($event) as element(tr)* {
                            <td class="message">{("Preprint date in the XML ("||$iso-date||") matches the details registered at "||$source||".")}</td>
                        </tr>
                       )
+                  else if ($response/@is-warning="true" and $iso-date!=$iso-xml-date) then (
+                         <tr class="warning odd">
+                           <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                           <td>Warning</td>
+                           <td>preprint-doi-date</td>
+                           <td class="xpath" hidden="">/article[1]/front[1]/article-meta[1]/pub-history[1]/event[1]</td>
+                           <td class="message">{("Preprint date in the XML does not match the latest indexed version at "||$source||". Is this correct? (it may be correct, as the latest indexed version may not be the version that was submitted)? The XML has '"||$iso-xml-date||"' whereas "||$source||" has '"||$iso-date,"'. (",<a href="{'https://doi.org/'||$doi}" target="_blank">{$doi}</a>,")")}</td>
+                         </tr>
+                  )
                   else (<tr class="error odd">
                          <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
                          <td>Error</td>
@@ -638,22 +654,24 @@ declare function e:get-preprint-rows($event) as element(tr)* {
                          </tr>)
 };
 
-declare function e:get-doi-api-res($doi) as element(res){
+declare function e:get-doi-api-res($doi as xs:string, $is-prc as xs:boolean) as element(res){
   (: Try crossref head-only first :)
+  let $is-warning := if ($is-prc) then 'true' else 'false'
   let $head-res := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
                    catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}" source="basex"/>}
   let $status := $head-res/@status/string()
   return if ($status="200") then (
                         let $json := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
-                                     catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><posted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></posted></json>}
-                        let $date-parts := $json//*:json//*:posted/*:date-parts/_
+                                     catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><posted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></posted><accepted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></accepted></json>}
+                        let $date-parts := if ($is-prc) then ($json//*:json//*:accepted/*:date-parts/_)
+                                           else $json//*:json//*:posted/*:date-parts/_
                         let $iso-date := string-join(for $t at $p in $date-parts/_ 
                                            order by $p ascending 
                                            return if (string-length($t)=1) then '0'||$t
                                                   else $t
-                                           ,'-') 
+                                           ,'-')
                         return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}" source="basex"/>
-                               else <res status="{$status}" message="{$json/@message/string()}" iso-date="{$iso-date}" source="crossref"/>
+                               else <res status="{$status}" is-warning="{$is-warning}" message="{$json/@message/string()}" iso-date="{$iso-date}" source="crossref"/>
                         )
         else if ($status="404") then (
           (: If not found at Crossref, then try DataCite :)
@@ -664,10 +682,11 @@ declare function e:get-doi-api-res($doi) as element(res){
                (: If found at DataCite :)
                let $json := try {http:send-request(<http:request method="get" href="{'https://api.datacite.org/dois/'||web:encode-url($doi)}" timeout="2"/>)}
                             catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><dates><_><date>1970-01-01T</date><dateType>Submitted</dateType></_></dates></json>}
-               let $date := $json//*:dates/_[dateType='Submitted'][1]/date/substring-before(.,'T')
+               let $date := if ($is-prc) then ($json//*:dates/_[dateType='Submitted'][last()]/date/substring-before(.,'T'))
+                            else $json//*:dates/_[dateType='Submitted'][1]/date/substring-before(.,'T')
                return if ($json/@err-code) then <res status="{('basex code: '||$json/@err-code/string())}" message="{$json/@err-code/string()}" source="basex"/>
                       else if (matches($date,'\d{4}-\d{2}-\d{2}')) 
-                         then <res status="{$status}" message="{$head-res/@message/string()}" iso-date="{$date}" source="dataCite"/>
+                         then <res status="{$status}" message="{$head-res/@message/string()}" is-warning="{$is-warning}" iso-date="{$date}" source="dataCite"/>
                       else <res status="{$status}" message="{$head-res/@message/string()}" iso-date="" source="dataCite"/>
                   )
                   (: If not found at DataCite or there was some other error :)
