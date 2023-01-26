@@ -6,6 +6,18 @@ declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
 (: Schematron :)
 
 declare
+  %rest:path("/schematron/preprint")
+  %rest:POST("{$xml}")
+  %input:text("xml","encoding=UTF-8")
+  %output:method("json")
+function e:validate-preprint($xml)
+{
+  let $xsl := doc('./schematron/rp-schematron.xsl')
+  let $svrl :=  e:transform($xml, $xsl)
+  return e:svrl2json($svrl)
+};
+
+declare
   %rest:path("/schematron/pre")
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
