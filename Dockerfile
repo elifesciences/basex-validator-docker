@@ -1,4 +1,4 @@
-FROM basex/basexhttp:9.2.3
+FROM fredatherden/basexhttp:9.2.3
 COPY --chown=basex src/repo /srv/basex/repo
 COPY --chown=basex src/webapp /srv/basex/webapp
 COPY --chown=basex eLife-JATS-schematron/src /srv/basex/webapp/schematron
