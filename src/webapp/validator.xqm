@@ -103,7 +103,7 @@ declare function e:svrl2json($svrl)
 
 (: Contains check for Glencoe metadata :)
 declare function e:svrl2json-final($xml,$svrl){
-  let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
+  let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi" and not(@specific-use)]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-errors := 
   string-join(
@@ -476,7 +476,7 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
 declare function e:svrl2result-video($xml,$svrl) as element(div)*
 {
   let $is-prc := e:is-prc($xml)
-  let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi"]/string()
+  let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi" and not(@specific-use)]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
