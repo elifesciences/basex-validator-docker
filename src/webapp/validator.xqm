@@ -18,7 +18,7 @@ function e:validate-preprint($xml)
 };
 
 declare
-  %rest:path("/schematron/manifesr")
+  %rest:path("/schematron/manifest")
   %rest:POST("{$xml}")
   %input:text("xml","encoding=UTF-8")
   %output:method("json")
