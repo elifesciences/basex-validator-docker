@@ -318,8 +318,6 @@ declare function e:getXpath($node as node()) {
 declare
   %rest:path("/xsl")
   %rest:POST("{$xml}")
-  %rest:consumes("application/xml","text/xml")
-  %rest:produces("application/xml", "text/xml")
 function e:transform-preprint($xml as item())
 {
   let $options := map{'indent':'no',
