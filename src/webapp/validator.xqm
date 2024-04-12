@@ -313,6 +313,30 @@ declare function e:getXpath($node as node()) {
   return ($parents||$self)
 };
 
+(: XSL :)
+
+declare
+  %rest:path("/xsl")
+  %rest:POST("{$xml}")
+  %rest:consumes("application/xml", "text/xml")
+  %rest:produces("application/xml", "text/xml")
+function e:transform-preprint($xml as item())
+{
+  let $options := map{'indent':'no',
+                    'omit-xml-declaration':'no',
+                    'doctype-public':'-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD with MathML3 v1.3 20210610//EN',
+                    'doctype-system':'JATS-archivearticle1-3-mathml3.dtd'}
+  let $xsl := doc('./schematron/preprint-changes.xsl')
+  return 
+  if ($xml[.instance of xs:string]) then (
+    xslt:transform-text($xml,$xsl,$options)
+  )
+  else if ($xml[.instance of document-node()]) then (
+    xslt:transform-text($xml,$xsl,$options)
+  )
+  else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
+};
+
 (: HTML pages:)
 
 declare
