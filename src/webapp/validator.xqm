@@ -320,19 +320,26 @@ declare
   %rest:POST("{$xml}")
 function e:transform-preprint($xml as item())
 {
+  let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
   let $options := map{'indent':'no',
-                    'omit-xml-declaration':'no',
-                    'doctype-public':'-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD with MathML3 v1.3 20210610//EN',
-                    'doctype-system':'JATS-archivearticle1-3-mathml3.dtd'}
+                    'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-changes.xsl')
   return 
   if ($xml[.instance of xs:string]) then (
-    xslt:transform-text($xml,$xsl,$options)
+    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
+    xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
   )
   else if ($xml[.instance of document-node()]) then (
+    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
     xslt:transform-text($xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
+};
+
+declare function e:strip-preamble($xml as xs:string){
+  if (contains($xml,'<!DOCTYPE'))
+    then ('<article'||substring-after($xml,'<article'))
+  else ($xml)
 };
 
 (: HTML pages:)
