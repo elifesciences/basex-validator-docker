@@ -339,7 +339,7 @@ function e:transform-preprint($xml as item())
 declare
   %rest:path("/xsl-temp")
   %rest:POST("{$xml}")
-function e:transform-preprint($xml as item())
+function e:transform-preprint-temp($xml as item())
 {
   let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
   let $options := map{'indent':'no',
