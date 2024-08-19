@@ -324,11 +324,10 @@ function e:transform-preprint($xml as item())
   let $options := map{'indent':'no',
                     'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-changes.xsl')
-  let $xsl-chained := doc('./schematron/preprint-changes-chained.xsl')
   return 
   if ($xml[.instance of xs:string]) then (
     '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
-    xslt:transform-text(xslt:transform-text(e:strip-preamble($xml),$xsl,$options),$xsl-chained,$options)
+    xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
   )
   else if ($xml[.instance of document-node()]) then (
     '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
@@ -346,15 +345,14 @@ function e:transform-preprint-temp($xml as item())
   let $options := map{'indent':'no',
                     'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-changes-temp.xsl')
-  let $xsl-chained := doc('./schematron/preprint-changes-chained.xsl')
   return 
   if ($xml[.instance of xs:string]) then (
     '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
-    xslt:transform-text(xslt:transform-text(e:strip-preamble($xml),$xsl,$options),$xsl-chained,$options)
+    xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
   )
   else if ($xml[.instance of document-node()]) then (
     '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
-    xslt:transform-text(xslt:transform-text($xml,$xsl,$options),$xsl-chained,$options)
+    xslt:transform-text($xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
 };
