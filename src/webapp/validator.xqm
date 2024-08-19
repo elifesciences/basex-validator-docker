@@ -331,7 +331,7 @@ function e:transform-preprint($xml as item())
   )
   else if ($xml[.instance of document-node()]) then (
     '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
-    xslt:transform-text(xslt:transform-text($xml,$xsl,$options),$xsl-chained,$options)
+    xslt:transform-text($xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
 };
