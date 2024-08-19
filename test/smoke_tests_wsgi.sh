@@ -17,6 +17,14 @@ if [ $FINAL_HTTP_RESPONSE_CODE -ne 200 ] ; then
 fi
 echo "SUCCESS!"
 
+echo -n "$0: Testing preprint..."
+XSL_HTTP_RESPONSE_CODE=$(curl --write-out %{http_code} --silent --output /dev/null -F xml=@./xml/595301.xml $URL/schematron/preprint)
+if [ $XSL_HTTP_RESPONSE_CODE -ne 200 ] ; then
+    echo "FAILED!"
+    exit 1
+fi
+echo "SUCCESS!"
+
 echo -n "$0: Testing xsl..."
 XSL_HTTP_RESPONSE_CODE=$(curl --write-out %{http_code} --silent --output /dev/null -F xml=@./xml/595301.xml $URL/xsl)
 if [ $XSL_HTTP_RESPONSE_CODE -ne 200 ] ; then
