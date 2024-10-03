@@ -610,7 +610,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
 };
 
 declare function e:get-ror-rows($xml) as element(tr)* {
-  let $non-ror-count := count($xml//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution])
+  let $non-ror-count := count($xml//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution and (ancestor::*:article-meta or ancestor::*:contrib[@contrib-type="reviewer"] or ancestor::*:contrib[@contrib-type="author" and role[@specific-use="referee"]])])
   let $isEvenTotal := $non-ror-count mod 2 = 0
   (: If there are <= 200 affiliations without RORs :)
   return if ($non-ror-count le 200) then (
