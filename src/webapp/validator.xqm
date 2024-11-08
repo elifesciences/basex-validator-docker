@@ -313,7 +313,7 @@ declare function e:getXpath($node as node()) {
   return ($parents||$self)
 };
 
-declare function local:introduce-rors($xml as item()) {
+declare function e:introduce-rors($xml as item()) {
   let $node := if ($xml[.instance of xs:string]) then parse-xml($xml)
                else $xml
   let $new-xml := 
