@@ -313,6 +313,41 @@ declare function e:getXpath($node as node()) {
   return ($parents||$self)
 };
 
+declare function local:introduce-rors($xml as item()) {
+  let $node := if ($xml[.instance of xs:string]) then parse-xml($xml)
+               else $xml
+  let $new-xml := 
+    copy $copy := $node
+    modify(
+      for $aff in $copy//*:article-meta//*:aff[not(descendant::*:institution-id[@institution-id-ype="ror"]) and *:institution]
+      let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content','city'))],', ')
+      let $json := try {
+                 http:send-request(
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
+                 </http:request>)//*:json}
+               catch * {<json><number__of__results>0</number__of__results></json>}
+      return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
+             then ()
+             else (
+              let $inst-wrap := <institution-wrap>{
+                for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
+                             order by $y/*:score[1] descending
+                             return $y)[position() lt 4]
+                return ('&#xa;',
+                  comment {'Option '||$p||': Closenss score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:lang='en'][1]/*:value[1]/data()},
+                  '&#xa;',
+                  <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
+                  '&#xa;'
+                ),
+                $aff/institution[1]
+              }</institution-wrap>
+              return replace node $aff/*:institution[1] with $inst-wrap
+             )
+    )
+    return $copy
+  return $new-xml
+};
+
 (: XSL :)
 
 declare
@@ -324,14 +359,15 @@ function e:transform-preprint($xml as item())
   let $options := map{'indent':'no',
                     'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-changes.xsl')
+  let $ror-xml := e:introduce-rors($xml)
   return 
-  if ($xml[.instance of xs:string]) then (
+  if ($ror-xml[.instance of xs:string]) then (
     '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
-    xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
+    xslt:transform-text(e:strip-preamble($ror-xml),$xsl,$options)
   )
-  else if ($xml[.instance of document-node()]) then (
+  else if ($ror-xml[.instance of document-node()]) then (
     '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
-    xslt:transform-text($xml,$xsl,$options)
+    xslt:transform-text($ror-xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
 };
