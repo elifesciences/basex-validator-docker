@@ -326,11 +326,11 @@ function e:transform-preprint($xml as item())
   let $xsl := doc('./schematron/preprint-changes.xsl')
   return 
   if ($xml[.instance of xs:string]) then (
-    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
     xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
   )
   else if ($xml[.instance of document-node()]) then (
-    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
     xslt:transform-text($xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
@@ -347,11 +347,11 @@ function e:transform-preprint-temp($xml as item())
   let $xsl := doc('./schematron/preprint-changes-temp.xsl')
   return 
   if ($xml[.instance of xs:string]) then (
-    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
     xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
   )
   else if ($xml[.instance of document-node()]) then (
-    '<?xml version="1.0" encoding="UTF-8"?>'||$doctype||
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
     xslt:transform-text($xml,$xsl,$options)
   )
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
