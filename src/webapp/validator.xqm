@@ -334,7 +334,7 @@ declare function e:introduce-rors($xml as item()) {
                              order by $y/*:score[1] descending
                              return $y)[position() lt 4]
                 return ('&#xa;',
-                  comment {'Option '||$p||': Closenss score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:lang='en'][1]/*:value[1]/data()},
+                  comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()},
                   '&#xa;',
                   <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
                   '&#xa;'
