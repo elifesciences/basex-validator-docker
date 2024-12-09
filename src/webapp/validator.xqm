@@ -664,7 +664,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
                                 for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
                                 order by $y/*:score[1] descending
                                 return $y)[position() lt 4]
-                      let $a := <a href="{$res/*:organization/*:id}" target="_blank">{$res/*:organization/*:names/_[*:lang='en']/*:value/data()}</a>
+                      let $a := <a href="{$res/*:organization/*:id}" target="_blank">{$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()}</a>
                       return ($a,' (Closeness score '||$res/*:score[1]||')')
       return <wrap>
                <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
