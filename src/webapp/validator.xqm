@@ -393,6 +393,27 @@ function e:transform-preprint-temp($xml as item())
   else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
 };
 
+declare
+  %rest:path("/xsl-silent")
+  %rest:POST("{$xml}")
+function e:transform-preprint-temp($xml as item())
+{
+  let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
+  let $options := map{'indent':'no',
+                    'omit-xml-declaration':'yes'}
+  let $xsl := doc('./schematron/preprint-silent-changes.xsl')
+  return 
+  if ($xml[.instance of xs:string]) then (
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
+    xslt:transform-text(e:strip-preamble($xml),$xsl,$options)
+  )
+  else if ($xml[.instance of document-node()]) then (
+    '<?xml version="1.0" encoding="UTF-8"?>&#xa;'||$doctype||'&#xa;'||
+    xslt:transform-text($xml,$xsl,$options)
+  )
+  else (error(xs:QName("basex:error"),'Input must be supplied as a string or XML document.'))
+};
+
 declare function e:strip-preamble($xml as xs:string){
   if (contains($xml,'<!DOCTYPE'))
     then ('<article'||substring-after($xml,'<article'))
