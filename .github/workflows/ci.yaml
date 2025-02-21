@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     # if: github.ref == 'refs/heads/master'
     env:
-      IMAGE_REPO: ghcr.io/elifesciences/api-dummy
+      IMAGE_REPO: ghcr.io/elifesciences/basex-validator
       IMAGE_TAG: ${{ github.ref == 'refs/heads/master' && needs.generate-version.outputs.trunkver || format('{0}-{1}', github.head_ref || github.ref_name, needs.generate-version.outputs.trunkver) }}
     steps:
       - uses: actions/checkout@v4
