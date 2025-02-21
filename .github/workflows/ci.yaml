@@ -26,23 +26,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          daemon-config: |
-            {
-              "debug": true,
-              "features": {
-                "containerd-snapshotter": true
-              }
-            }
-      - name: Build and load image
-        uses: docker/build-push-action@v6
-        with:
-          push: false
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
       - name: Bring up test stack
         run: docker compose up --wait
       - name: Debug bring up test stack
