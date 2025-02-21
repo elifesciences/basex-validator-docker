@@ -55,7 +55,8 @@ jobs:
         with:
           push: true
           load: false
-          target: prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ env.IMAGE_REPO }}:${{ github.sha }}
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
