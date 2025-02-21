@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Bring up test stack
         run: docker compose up --wait
       - name: Debug bring up test stack
