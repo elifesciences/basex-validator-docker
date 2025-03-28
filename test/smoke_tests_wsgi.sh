@@ -10,7 +10,7 @@ fi
 echo "SUCCESS!"
 
 echo -n "$0: Testing final..."
-FULL_RESPONSE=$(curl --write-out %{http_code} --silent --show-error -F xml=@./xml/elife45905.xml $URL/schematron/final)
+FULL_RESPONSE=$(curl --write-out %{http_code} --no-expect --silent --show-error -F xml=@./xml/elife45905.xml $URL/schematron/final)
 FINAL_HTTP_RESPONSE_CODE="${FULL_RESPONSE: -3}"
 RESPONSE_BODY="${FULL_RESPONSE%HTTP_CODE:*}"
 if [ $FINAL_HTTP_RESPONSE_CODE -ne 200 ] ; then
