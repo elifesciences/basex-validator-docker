@@ -10,9 +10,12 @@ fi
 echo "SUCCESS!"
 
 echo -n "$0: Testing final..."
-FINAL_HTTP_RESPONSE_CODE=$(curl --write-out %{http_code} --silent --output /dev/null -F xml=@./xml/elife45905.xml $URL/schematron/final)
+FULL_RESPONSE=$(curl --write-out %{http_code} --silent --show-error -F xml=@./xml/elife45905.xml $URL/schematron/final)
+FINAL_HTTP_RESPONSE_CODE="${FULL_RESPONSE: -3}"
+RESPONSE_BODY="${FULL_RESPONSE%HTTP_CODE:*}"
 if [ $FINAL_HTTP_RESPONSE_CODE -ne 200 ] ; then
-    echo "FAILED!"
+    echo "FAILED! (HTTP $FINAL_HTTP_RESPONSE_CODE)"
+    [ -n "$RESPONSE_BODY" ] && echo "Response: $RESPONSE_BODY"
     exit 1
 fi
 echo "SUCCESS!"
