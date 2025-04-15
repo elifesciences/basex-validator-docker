@@ -607,6 +607,7 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
   let $is-prc := e:is-prc($xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint" and @*:href!='']][1]
   let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
+  let $assessment-rows := if ($is-prc) then e:get-assessment-rows($xml) else()
   let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
     <thead>
@@ -618,7 +619,7 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
       <th>Message</th>
     </tr>    
     </thead>
-    <tbody>{$preprint-rows,$ror-rows,e:get-table-rows($svrl)}</tbody>
+    <tbody>{$preprint-rows,$assessment-rows,$ror-rows,e:get-table-rows($svrl)}</tbody>
 </table>
   
   let $image-name := if ($table//*:tr[contains(@class,'error')]) then "error"
@@ -642,6 +643,7 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
   let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
   let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
+  let $assessment-rows := if ($is-prc) then e:get-assessment-rows($xml) else()
   let $ror-rows := e:get-ror-rows($xml)
   let $table-rows := e:get-table-rows($svrl)       
   let $table := <table>
@@ -655,7 +657,7 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
       </tr>
    </thead>
    <tbody>
-     {($glencoe-rows,$preprint-rows,$ror-rows,$table-rows)}
+     {($glencoe-rows,$preprint-rows,$assessment-rows,$ror-rows,$table-rows)}
    </tbody>
 </table>
   
@@ -694,7 +696,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                                   <td>Error</td>
                                   <td>unknown</td>
                                   <td class="xpath" hidden="">/article[1]</td>
-                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
+                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please ensure that the Glencoe data is correct.</td>
                                 </tr>
                                 
     else (for $vid in $xml//*:media[@mimetype="video"]
@@ -709,12 +711,12 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                 </tr>)
 };
 
-declare function e:get-assessment-rows($xml, $comparison-type) as element(tr)* {
+declare function e:get-assessment-rows($xml) as element(tr)* {
   let $id := $xml//*:article//*:article-id[@pub-id-type="publisher-id"]/data()
   let $prev-terms := e:get-assessment-terms-from-api($id)
-  let $prev-terms-set := distinct-values($prev-terms)
+  let $prev-terms-set := distinct-values($prev-terms//*:term)
   let $curr-terms := e:get-assessment-terms-from-xml($xml)
-  let $curr-terms-set := distinct-values($curr-terms)
+  let $curr-terms-set := distinct-values($curr-terms//*:term)
   return if (count($prev-terms-set) = count($curr-terms-set) 
               and (every $item in $prev-terms-set satisfies $item = $curr-terms-set))
             then (<tr class="info odd">
@@ -730,7 +732,7 @@ declare function e:get-assessment-rows($xml, $comparison-type) as element(tr)* {
              <td>Warning</td>
              <td>assessment-comparison</td>
              <td class="xpath" hidden="">/article[1]/sub-article[1]/front-stub[1]/kwd-group[1]</td>
-             <td class="message">The Assessment terms in this VOR are not the same as those in the most recently published Reviewed preprint. Is that correct? VOR:{string-join($curr-terms-set,'; ')}. RP:{string-join($prev-terms-set,'; ')}.</td>
+             <td class="message">The Assessment terms in this VOR are not the same as those in the most recently published Reviewed preprint. Is that correct? VOR: {string-join($curr-terms-set,'; ')}. RP: {string-join($prev-terms-set,'; ')}.</td>
              </tr>
          )
 };
