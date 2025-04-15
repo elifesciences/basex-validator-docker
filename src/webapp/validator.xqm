@@ -200,7 +200,57 @@ declare function e:get-glencoe($doi){
   
   (: Return error for timeout :)
   catch * { json:parse('{"error": "Not found"}') }
-   
+};
+
+declare function e:get-assessment-terms-from-api($id){
+  let $json := try {
+    http:send-request(
+      <http:request method='get' href="{('https://api.elifesciences.org/reviewed-preprints/'||$id)}" timeout='2'>
+        <http:header name="User-Agent" value="basex-validator"/>
+      </http:request>)//*:json}
+    (: Return error for timeout :)
+    catch * { json:parse('{"error": "timeout"}') }
+  return <terms>{
+            for $x in $json/*:elifeAssessment/*[local-name()=('significance','strength')]
+            let $type := $x/local-name()
+            order by $type
+            let $terms :=  for $term in $x/*
+                           let $rank := e:assessment-term-to-number($term)
+                           return <term rank="{$rank}">{data($term)}</term>
+            let $rank := sum(for $term in $terms return number($term/@rank))
+            return element {$type} {attribute {'rank'} {$rank}, $terms}
+        }</terms>
+};
+
+declare function e:get-assessment-terms-from-xml($xml){
+  <terms>{
+    for $kwd-group in $xml//*:sub-article[@article-type="editor-report"]/*:front-stub/*:kwd-group
+    let $type := if ($kwd-group/@kwd-group-type="evidence-strength") then 'strength' else 'significance'
+    order by $type
+    let $terms :=  for $term in $kwd-group/*:kwd
+                   let $rank := e:assessment-term-to-number($term)
+                   return <term rank="{$rank}">{lower-case(data($term))}</term>
+    let $rank := sum(for $term in $terms return number($term/@rank))
+    return element {$type} {attribute {'rank'} {$rank}, $terms}
+  }</terms>
+};
+
+declare function e:assessment-term-to-number($term){
+    switch (lower-case($term))
+        (: Strength :)
+        case "inadequate" return 1
+        case "incomplete" return 2
+        case "solid" return 3
+        case "convincing" return 4
+        case "compelling" return 5
+        case "exceptional" return 6
+        (: Significance :)
+        case "useful" return 1
+        case "valuable" return 2
+        case "important" return 3
+        case "fundamental" return 4
+        case "landmark" return 5
+        default return -1
 };
 
 declare function e:transform($xml,$schema)
@@ -657,6 +707,32 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                   <td class="xpath" hidden="">{e:getXpath($vid)}</td>
                   <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>)
+};
+
+declare function e:get-assessment-rows($xml, $comparison-type) as element(tr)* {
+  let $id := $xml//*:article//*:article-id[@pub-id-type="publisher-id"]/data()
+  let $prev-terms := e:get-assessment-terms-from-api($id)
+  let $prev-terms-set := distinct-values($prev-terms)
+  let $curr-terms := e:get-assessment-terms-from-xml($xml)
+  let $curr-terms-set := distinct-values($curr-terms)
+  return if (count($prev-terms-set) = count($curr-terms-set) 
+              and (every $item in $prev-terms-set satisfies $item = $curr-terms-set))
+            then (<tr class="info odd">
+                   <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                   <td>Info</td>
+                   <td>assessment-comparison</td>
+                   <td class="xpath" hidden="">/article[1]</td>
+                   <td class="message">Assessment terms are the same as the most recently published Reviewed Preprint</td>
+             </tr>)
+         else (
+           <tr class="warning odd">
+             <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+             <td>Warning</td>
+             <td>assessment-comparison</td>
+             <td class="xpath" hidden="">/article[1]/sub-article[1]/front-stub[1]/kwd-group[1]</td>
+             <td class="message">The Assessment terms in this VOR are not the same as those in the most recently published Reviewed preprint. Is that correct? VOR:{string-join($curr-terms-set,'; ')}. RP:{string-join($prev-terms-set,'; ')}.</td>
+             </tr>
+         )
 };
 
 declare function e:get-ror-rows($xml) as element(tr)* {
