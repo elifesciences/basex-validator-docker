@@ -242,19 +242,19 @@ declare function e:get-assessment-terms-from-xml($xml){
 declare function e:assessment-term-to-number($term){
     switch (lower-case($term))
         (: Strength :)
-        case "inadequate" return 1
-        case "incomplete" return 2
-        case "solid" return 3
-        case "convincing" return 4
-        case "compelling" return 5
-        case "exceptional" return 6
+        case "inadequate" return -2
+        case "incomplete" return -1
+        case "solid" return 1
+        case "convincing" return 2
+        case "compelling" return 3
+        case "exceptional" return 4
         (: Significance :)
         case "useful" return 1
         case "valuable" return 2
         case "important" return 3
         case "fundamental" return 4
         case "landmark" return 5
-        default return -1
+        default return -9
 };
 
 declare function e:get-assessment-terms-warning-json($xml){
