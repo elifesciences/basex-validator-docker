@@ -8,55 +8,50 @@ declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
 declare
   %rest:path("/schematron/preprint")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-preprint($xml)
 {
   let $xsl := doc('./schematron/rp-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  return e:svrl2json($svrl)
+  return e:svrl2json($xml,$svrl)
 };
 
 declare
   %rest:path("/schematron/manifest")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-manifest($xml)
 {
   let $xsl := doc('./schematron/meca-manifest-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  return e:svrl2json($svrl)
+  return e:svrl2json($xml,$svrl)
 };
 
 declare
   %rest:path("/schematron/pre")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-pre($xml)
 {
   let $xsl := doc('./schematron/pre-JATS-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  return e:svrl2json($svrl)
+  return e:svrl2json($xml,$svrl)
 };
 
 declare
   %rest:path("/schematron/dl")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-dl($xml)
 {
   let $xsl := doc('./schematron/dl-schematron.xsl')
   let $svrl :=  e:transform($xml, $xsl)
-  return e:svrl2json($svrl)
+  return e:svrl2json($xml,$svrl)
 };
 
 declare
   %rest:path("/schematron/final")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-final($xml)
 {
@@ -65,11 +60,12 @@ function e:validate-final($xml)
   return 
   (: Extra check for Glencoe Metadata :)
   if ($xml//*:media[@mimetype="video"]) then (e:svrl2json-final($xml,$svrl))
-  else e:svrl2json($svrl)
+  else e:svrl2json($xml,$svrl)
 };
 
-declare function e:svrl2json($svrl)
+declare function e:svrl2json($xml,$svrl)
 { 
+  let $assessment-warnings := e:get-assessment-terms-warning-json($xml)
   let $errors :=
       concat(
          '"errors": [',
@@ -89,15 +85,16 @@ declare function e:svrl2json($svrl)
      concat(
          '"warnings": [',
          string-join(
-         for $warn in $svrl//*[@role=('info','warning','warn')]
-         return concat(
+           ($assessment-warnings,
+           for $warn in $svrl//*[@role=('info','warning','warn')]
+           return concat(
                 '{',
                 ('"path": "'||$warn/@location/string()||'",'),
                 ('"type": "'||$warn/@role/string()||'",'),
                 ('"message": "'||e:get-message($warn)||'"'),
                 '}'
               )
-          ,','),
+          ),','),
         ']'
       )
       
@@ -115,18 +112,19 @@ declare function e:svrl2json($svrl)
 
 (: Contains check for Glencoe metadata :)
 declare function e:svrl2json-final($xml,$svrl){
+  let $assessment-warnings := e:get-assessment-terms-warning-json($xml)
   let $doi := $xml//*:article-meta//*:article-id[@pub-id-type="doi" and not(@specific-use)]/string()
   let $glencoe := e:get-glencoe($doi)
   let $glencoe-errors := 
   string-join(
-           if ($glencoe//*:error) then ('{"path": "unknown", "type": "error", "message": "There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct."}')
+           if ($glencoe//*:error) then ('{"path": "unknown", "type": "error", "message": "There is no Glencoe metadata for this article but it contains videos. Please ensure that the Glencoe data is correct."}')
          else (
            for $vid in $xml//*:media[@mimetype="video"]
            let $id := $vid/@id
            return if ($glencoe/*[local-name()=$id and *:video__id[.=$id] and ends-with(*:solo__href,$id)]) then ()
            else concat(
                 '{',
-                ('"path": "unkown",'),
+                ('"path": "unknown",'),
                 ('"type": "error",'),
                 ('"message": "There is no metadata in Glencoe for the video with id '||concat("'",$id,"'")||'."'),
                 '}'
@@ -156,6 +154,7 @@ let $warnings :=
      concat(
          '"warnings": [',
          string-join(
+         ($assessment-warnings,
          for $warn in $svrl//*[@role=('info','warning','warn')]
          return concat(
                 '{',
@@ -164,7 +163,7 @@ let $warnings :=
                 ('"message": "'||e:get-message($warn)||'"'),
                 '}'
               )
-          ,','),
+        ),','),
         ']'
       )
       
@@ -205,7 +204,88 @@ declare function e:get-glencoe($doi){
   
   (: Return error for timeout :)
   catch * { json:parse('{"error": "Not found"}') }
-   
+};
+
+declare function e:get-assessment-terms-from-api($id){
+  let $json := try {
+    http:send-request(
+      <http:request method='get' href="{('https://api.elifesciences.org/reviewed-preprints/'||$id)}" timeout='2'>
+        <http:header name="User-Agent" value="basex-validator"/>
+      </http:request>)//*:json}
+    (: Return error for timeout :)
+    catch * { json:parse('{"error": "timeout"}') }
+  return <terms>{
+            for $x in $json/*:elifeAssessment/*[local-name()=('significance','strength')]
+            let $type := $x/local-name()
+            order by $type
+            let $terms :=  for $term in $x/*
+                           let $rank := e:assessment-term-to-number($term)
+                           return <term rank="{$rank}">{data($term)}</term>
+            let $rank := sum(for $term in $terms return number($term/@rank))
+            return element {$type} {attribute {'rank'} {$rank}, $terms}
+        }</terms>
+};
+
+declare function e:get-assessment-terms-from-xml($xml){
+  <terms>{
+    for $kwd-group in $xml//*:sub-article[@article-type="editor-report"]/*:front-stub/*:kwd-group
+    let $type := if ($kwd-group/@kwd-group-type="evidence-strength") then 'strength' else 'significance'
+    order by $type
+    let $terms :=  for $term in $kwd-group/*:kwd
+                   let $rank := e:assessment-term-to-number($term)
+                   return <term rank="{$rank}">{lower-case(data($term))}</term>
+    let $rank := sum(for $term in $terms return number($term/@rank))
+    return element {$type} {attribute {'rank'} {$rank}, $terms}
+  }</terms>
+};
+
+declare function e:assessment-term-to-number($term){
+    switch (lower-case($term))
+        (: Strength :)
+        case "inadequate" return 1
+        case "incomplete" return 2
+        case "solid" return 3
+        case "convincing" return 4
+        case "compelling" return 5
+        case "exceptional" return 6
+        (: Significance :)
+        case "useful" return 1
+        case "valuable" return 2
+        case "important" return 3
+        case "fundamental" return 4
+        case "landmark" return 5
+        default return -1
+};
+
+declare function e:get-assessment-terms-warning-json($xml){
+  let $id := $xml//*:article//*:article-id[@pub-id-type="publisher-id"]/data()
+  let $prev-terms := e:get-assessment-terms-from-api($id)
+  let $prev-terms-set := distinct-values($prev-terms//*:term)
+  let $curr-terms := e:get-assessment-terms-from-xml($xml)
+  let $curr-terms-set := distinct-values($curr-terms//*:term)
+  return
+  (:vor:)
+  if ($xml//*:article-version[@article-version-type="publication-state"]='version of record') then (
+      if (count($prev-terms-set) = count($curr-terms-set) and (every $item in $prev-terms-set satisfies $item = $curr-terms-set)) then concat(
+                '{',
+                ('"path": "\/article[1]\/sub-article[1]\/front-stub[1]\/kwd-group[1]",'),
+                ('"type": "warning",'),
+                ('"message": "The Assessment terms in this VOR are not the same as those in the most recently published Reviewed preprint. Is that correct? VOR: '||string-join($curr-terms-set,'; ')||'. RP: '||string-join($prev-terms-set,'; ')||'."'),
+                '}'
+              )
+      else ()
+    )
+  (:Revised reviewed preprint:)
+  else if (matches($xml//*:article-meta/*:article-id[@pub-id-type="doi" and @specific-use="version"][1],'[2-9]$')) then (
+    if ((number($prev-terms/*:strength/@rank) gt number($curr-terms/*:strength/@rank)) or (number($prev-terms/*:significance/@rank) gt number($curr-terms/*:significance/@rank)))
+    then concat(
+                '{',
+                ('"path": "\/article[1]\/sub-article[1]\/front-stub[1]\/kwd-group[1]",'),
+                ('"type": "warning",'),
+                ('"message": "The Assessment terms in this Revised Reviewed Preprint are lower than those in the previous version. Is that correct? Current: '||string-join($curr-terms-set,'; ')||'. Previous: '||string-join($prev-terms-set,'; ')||'."'),
+                '}'
+              )
+  )
 };
 
 declare function e:transform($xml,$schema)
@@ -437,7 +517,6 @@ function e:upload()
 declare
   %rest:path("/pre-result")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("html")
   %output:html-version("5.0")
 function e:validate-pre-result($xml)
@@ -486,7 +565,6 @@ as element(html)
 declare
   %rest:path("/final-result")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("html")
   %output:html-version("5.0")
 function e:validate-final-result($xml)
@@ -564,6 +642,7 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
   let $is-prc := e:is-prc($xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint" and @*:href!='']][1]
   let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
+  let $assessment-rows := if ($is-prc) then e:get-assessment-rows($xml) else()
   let $ror-rows := e:get-ror-rows($xml)
   let $table := <table>
     <thead>
@@ -575,7 +654,7 @@ declare function e:svrl2result($xml,$svrl) as element(div) {
       <th>Message</th>
     </tr>    
     </thead>
-    <tbody>{$preprint-rows,$ror-rows,e:get-table-rows($svrl)}</tbody>
+    <tbody>{$preprint-rows,$assessment-rows,$ror-rows,e:get-table-rows($svrl)}</tbody>
 </table>
   
   let $image-name := if ($table//*:tr[contains(@class,'error')]) then "error"
@@ -599,6 +678,7 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
   let $glencoe-rows := e:get-glencoe-rows($glencoe,$xml)
   let $preprint-event := $xml//*:article-meta/*:pub-history/*:event[*:self-uri[@content-type="preprint"]]
   let $preprint-rows := if ($preprint-event) then e:get-preprint-rows($preprint-event,$is-prc) else ()
+  let $assessment-rows := if ($is-prc) then e:get-assessment-rows($xml) else()
   let $ror-rows := e:get-ror-rows($xml)
   let $table-rows := e:get-table-rows($svrl)       
   let $table := <table>
@@ -612,7 +692,7 @@ declare function e:svrl2result-video($xml,$svrl) as element(div)*
       </tr>
    </thead>
    <tbody>
-     {($glencoe-rows,$preprint-rows,$ror-rows,$table-rows)}
+     {($glencoe-rows,$preprint-rows,$assessment-rows,$ror-rows,$table-rows)}
    </tbody>
 </table>
   
@@ -651,7 +731,7 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                                   <td>Error</td>
                                   <td>unknown</td>
                                   <td class="xpath" hidden="">/article[1]</td>
-                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please esnure that the Glencoe data is correct.</td>
+                                  <td class="message">There is no Glencoe metadata for this article but it contains videos. Please ensure that the Glencoe data is correct.</td>
                                 </tr>
                                 
     else (for $vid in $xml//*:media[@mimetype="video"]
@@ -664,6 +744,32 @@ declare function e:get-glencoe-rows($glencoe,$xml) as element(tr)* {
                   <td class="xpath" hidden="">{e:getXpath($vid)}</td>
                   <td class="message">{'There is no metadata in Glencoe for the video with id "'||$id||'".'}</td>
                 </tr>)
+};
+
+declare function e:get-assessment-rows($xml) as element(tr)* {
+  let $id := $xml//*:article//*:article-id[@pub-id-type="publisher-id"]/data()
+  let $prev-terms := e:get-assessment-terms-from-api($id)
+  let $prev-terms-set := distinct-values($prev-terms//*:term)
+  let $curr-terms := e:get-assessment-terms-from-xml($xml)
+  let $curr-terms-set := distinct-values($curr-terms//*:term)
+  return if (count($prev-terms-set) = count($curr-terms-set) 
+              and (every $item in $prev-terms-set satisfies $item = $curr-terms-set))
+            then (<tr class="info odd">
+                   <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+                   <td>Info</td>
+                   <td>assessment-comparison</td>
+                   <td class="xpath" hidden="">/article[1]</td>
+                   <td class="message">Assessment terms are the same as the most recently published Reviewed Preprint</td>
+             </tr>)
+         else (
+           <tr class="warning odd">
+             <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
+             <td>Warning</td>
+             <td>assessment-comparison</td>
+             <td class="xpath" hidden="">/article[1]/sub-article[1]/front-stub[1]/kwd-group[1]</td>
+             <td class="message">The Assessment terms in this VOR are not the same as those in the most recently published Reviewed preprint. Is that correct? VOR: {string-join($curr-terms-set,'; ')}. RP: {string-join($prev-terms-set,'; ')}.</td>
+             </tr>
+         )
 };
 
 declare function e:get-ror-rows($xml) as element(tr)* {
