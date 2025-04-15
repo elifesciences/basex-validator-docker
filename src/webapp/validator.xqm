@@ -8,7 +8,6 @@ declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
 declare
   %rest:path("/schematron/preprint")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-preprint($xml)
 {
@@ -20,7 +19,6 @@ function e:validate-preprint($xml)
 declare
   %rest:path("/schematron/manifest")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-manifest($xml)
 {
@@ -32,7 +30,6 @@ function e:validate-manifest($xml)
 declare
   %rest:path("/schematron/pre")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-pre($xml)
 {
@@ -44,7 +41,6 @@ function e:validate-pre($xml)
 declare
   %rest:path("/schematron/dl")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-dl($xml)
 {
@@ -56,7 +52,6 @@ function e:validate-dl($xml)
 declare
   %rest:path("/schematron/final")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("json")
 function e:validate-final($xml)
 {
@@ -437,7 +432,6 @@ function e:upload()
 declare
   %rest:path("/pre-result")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("html")
   %output:html-version("5.0")
 function e:validate-pre-result($xml)
@@ -486,7 +480,6 @@ as element(html)
 declare
   %rest:path("/final-result")
   %rest:POST("{$xml}")
-  %input:text("xml","encoding=UTF-8")
   %output:method("html")
   %output:html-version("5.0")
 function e:validate-final-result($xml)
