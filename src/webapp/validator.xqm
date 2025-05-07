@@ -871,11 +871,11 @@ declare function e:get-preprint-rows($event as element()*, $is-prc as xs:boolean
 declare function e:get-doi-api-res($doi as xs:string, $is-prc as xs:boolean) as element(res){
   (: Try crossref head-only first :)
   let $is-warning := if ($is-prc) then 'true' else 'false'
-  let $head-res := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
+  let $head-res := try{http:send-request(<http:request method="get" href="{'https://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" status-only="true"/>)}
                    catch * {<http:response status="{('basex code: '||$err:code)}" message="{$err:description}" source="basex"/>}
   let $status := $head-res/@status/string()
   return if ($status="200") then (
-                        let $json := try{http:send-request(<http:request method="get" href="{'http://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
+                        let $json := try{http:send-request(<http:request method="get" href="{'https://api.crossref.org/works/'||web:encode-url($doi)||'?mailto:production@elifesciences.org'}" timeout="1"/>)}
                                      catch * {<json err-code="{$err:code}" err-desc="{$err:description}"><posted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></posted><accepted><date-parts><_>1970</_><_>01</_><_>01</_></date-parts></accepted></json>}
                         let $date-parts := if ($is-prc) then ($json//*:json//*:accepted/*:date-parts/_)
                                            else $json//*:json//*:posted/*:date-parts/_
