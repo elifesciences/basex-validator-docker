@@ -424,7 +424,7 @@ declare function e:introduce-rors($xml as item()) {
               return replace node $aff/*:institution[1] with $inst-wrap
              ),
        
-       for $inst-wrap in $copy//*:article-meta/*:funding-group//*:funding-source/*:institution-wrap
+       for $inst-wrap in $copy//*:article-meta/*:funding-group//*:funding-source/*:institution-wrap[not(institution-id[normalize-space(.)!=''])]
        let $inst := normalize-space($inst-wrap/*:institution[1])
        let $json := try {
                  http:send-request(
