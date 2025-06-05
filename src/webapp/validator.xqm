@@ -399,7 +399,7 @@ declare function e:introduce-rors($xml as item()) {
   let $new-xml := 
     copy $copy := $node
     modify(
-      for $aff in $copy//*:article-meta//*:aff[not(descendant::*:institution-id[@institution-id-ype="ror"]) and *:institution]
+      for $aff in $copy//*:article-meta//*:aff[not(descendant::*:institution-id[@institution-id-type="ror"]) and *:institution]
       let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content','city'))],', ')
       let $json := try {
                  http:send-request(
@@ -422,6 +422,31 @@ declare function e:introduce-rors($xml as item()) {
                 $aff/institution[1]
               }</institution-wrap>
               return replace node $aff/*:institution[1] with $inst-wrap
+             ),
+       
+       for $inst-wrap in $copy//*:article-meta/*:funding-group//*:funding-source/*:institution-wrap
+       let $inst := normalize-space($inst-wrap/*:institution[1])
+       let $json := try {
+                 http:send-request(
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst))}" timeout='2'>
+                 </http:request>)//*:json}
+               catch * {<json><number__of__results>0</number__of__results></json>}
+        return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
+             then ()
+             else (
+               let $new-inst-wrap := <institution-wrap>{
+                for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
+                             order by $y/*:score[1] descending
+                             return $y)[position() lt 4]
+                return ('&#xa;',
+                  comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
+                  '&#xa;',
+                  <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
+                  '&#xa;'
+                ),
+                $inst-wrap/institution[1]
+              }</institution-wrap>
+              return replace node $inst-wrap with $new-inst-wrap
              )
     )
     return $copy
