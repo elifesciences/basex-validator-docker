@@ -423,9 +423,8 @@ declare function e:introduce-rors($xml as item()) {
               }</institution-wrap>
               return replace node $aff/*:institution[1] with $inst-wrap
              ),
-       
-       for $inst-wrap in $copy//*:article-meta/*:funding-group//*:funding-source/*:institution-wrap[not(institution-id[normalize-space(.)!=''])]
-       let $inst := normalize-space($inst-wrap/*:institution[1])
+       for $funding-source in $copy//*:article-meta/*:funding-group//*:funding-source[not(normalize-space(*:named-content[@content-type="funder-id"])!='')]
+       let $inst := normalize-space($funding-source/text()[matches(.,'\S')][1])
        let $json := try {
                  http:send-request(
                  <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst))}" timeout='2'>
@@ -444,9 +443,9 @@ declare function e:introduce-rors($xml as item()) {
                   <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
                   '&#xa;'
                 ),
-                $inst-wrap/institution[1]
+                <institution>{$inst}</institution>,'&#xa;'
               }</institution-wrap>
-              return replace node $inst-wrap with $new-inst-wrap
+              return replace node $funding-source with <funding-source>{('&#xa;',$new-inst-wrap,'&#xa;')}</funding-source>
              )
     )
     return $copy
