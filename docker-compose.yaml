@@ -1,0 +1,12 @@
+services:
+  basex-validator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8984:8984"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://basex-validator:8984"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
