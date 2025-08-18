@@ -2,21 +2,6 @@ module namespace e = 'http://elifesciences.org/modules/validate';
 import module namespace session = "http://basex.org/modules/session";
 import module namespace rest = "http://exquery.org/ns/restxq";
 declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
-declare variable $e:ror-client-id := fn:environment-variable('ROR_CLIENT_ID');
-
-declare
-%rest:GET
-%rest:path('/ror-test')
-function e:get-ror-client-id() {
-  let $ror-client-id := fn:environment-variable('ROR_CLIENT_ID')
-  return (
-      if ($ror-client-id)
-      then $ror-client-id
-      else 'Variable was not found',
-      fn:available-environment-variables()
-    )
-  
-};
 
 (: Schematron :)
 
@@ -409,6 +394,7 @@ declare function e:getXpath($node as node()) {
 };
 
 declare function e:introduce-rors($xml as item()) {
+  let $ror-client-id := fn:environment-variable('ROR_CLIENT_ID')
   let $node := if ($xml[.instance of xs:string]) then parse-xml($xml)
                else $xml
   let $new-xml := 
@@ -419,7 +405,7 @@ declare function e:introduce-rors($xml as item()) {
       let $json := try {
                  http:send-request(
                  <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
-                   <http:header name="Client-Id" value="{$e:ror-client-id}"/>
+                   <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
       return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
@@ -444,7 +430,7 @@ declare function e:introduce-rors($xml as item()) {
        let $json := try {
                  http:send-request(
                  <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst))}" timeout='2'>
-                   <http:header name="Client-Id" value="{$e:ror-client-id}"/>
+                   <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
         return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
@@ -797,6 +783,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
   let $isEvenTotal := $non-ror-count mod 2 = 0
   (: If there are <= 100 affiliations without RORs :)
   return if ($non-ror-count le 100) then (
+    let $ror-client-id := fn:environment-variable('ROR_CLIENT_ID')
     for $result at $pos in (
       for $aff in $xml//*:aff[not(institution-wrap[*:institution-id]) and descendant::institution and (ancestor::*:article-meta or ancestor::*:contrib[@contrib-type="reviewer"] or ancestor::*:contrib[@contrib-type="author" and role[@specific-use="referee"]])]
       let $xpath := e:getXpath($aff)
@@ -804,7 +791,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
       let $json := try {
                  http:send-request(
                  <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
-                   <http:header name="Client-Id" value="{$e:ror-client-id}"/>
+                   <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
       where (number($json//*:number__of__results) gt 0) and $json//*:items/_[number(*:score[1]) ge 0.8]
