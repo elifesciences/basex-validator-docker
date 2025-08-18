@@ -8,9 +8,14 @@ declare
 %rest:GET
 %rest:path('/ror-test')
 function e:get-ror-client-id() {
-      if ($e:ror-client-id)
-      then <result>{$e:ror-client-id}</result>
-      else <result>Variable was not found.</result>
+  let $ror-client-id := fn:environment-variable('ROR_CLIENT_ID')
+  return (
+      if ($ror-client-id)
+      then $ror-client-id
+      else 'Variable was not found',
+      fn:available-environment-variables()
+    )
+  
 };
 
 (: Schematron :)
