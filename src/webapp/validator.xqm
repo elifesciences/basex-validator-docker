@@ -4,6 +4,15 @@ import module namespace rest = "http://exquery.org/ns/restxq";
 declare namespace svrl = "http://purl.oclc.org/dsdl/svrl";
 declare variable $e:ror-client-id := fn:environment-variable('ROR_CLIENT_ID');
 
+declare
+%rest:GET
+%rest:path('/ror-test')
+function e:get-ror-client-id() {
+      if ($e:ror-client-id)
+      then <result>{$e:ror-client-id}</result>
+      else <result>Variable was not found.</result>
+};
+
 (: Schematron :)
 
 declare
