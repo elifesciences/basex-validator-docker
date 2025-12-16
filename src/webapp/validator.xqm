@@ -404,7 +404,7 @@ declare function e:introduce-rors($xml as item()) {
       let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content','city'))],', ')
       let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display)||'&amp;single_search')}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
@@ -429,7 +429,7 @@ declare function e:introduce-rors($xml as item()) {
        let $inst := normalize-space($funding-source/text()[matches(.,'\S')][1])
        let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst)||'&amp;single_search')}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst))}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
@@ -790,7 +790,7 @@ declare function e:get-ror-rows($xml) as element(tr)* {
       let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content'))],', ')
       let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display)||'&amp;single_search')}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
