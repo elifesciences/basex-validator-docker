@@ -415,18 +415,25 @@ declare function e:introduce-rors($xml as item()) {
         return replace node $aff/*:institution[1] with $institution-wrap
        ),
        
-       for $funding-source in $copy//*:article-meta/*:funding-group//*:funding-source[not(normalize-space(*:named-content[@content-type="funder-id"])!='')]
-       let $inst := normalize-space($funding-source/text()[matches(.,'\S')][1])
+       for $funding-source in $copy//*:article-meta/*:funding-group//*:funding-source[not(descendant::*:institution-id[@institution-id-type="ror"]) and not(normalize-space(*:named-content[@content-type="funder-id"])!='')]
+       let $query-content := if ($funding-source//*:institution-id[@institution-id-type="FundRef"])
+                            then tokenize($funding-source//*:institution-id[@institution-id-type="FundRef"],'/')[last()]
+                            else normalize-space($funding-source/text()[matches(.,'\S')][1])
+       let $query := if ($funding-source//*:institution-id[@institution-id-type="FundRef"])
+                           then 'query='||$query-content
+                     else 'affiliation='||web:encode-url($query-content)
        let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($inst))}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?'||$query)}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
         let $results := e:extract-ror-matches($json)
         return if (not(exists($results))) then ()
         else (
-          let $institution-wrap := e:generate-ror-institution-wrap($results,$inst)
+          let $inner-node := if ($funding-source//*:institution) then $funding-source//*:institution
+                             else $query-content
+          let $institution-wrap := e:generate-ror-institution-wrap($results,$inner-node)
           return replace node $funding-source with 
                  <funding-source>{('&#xa;',$institution-wrap,'&#xa;')}</funding-source>
                )
@@ -436,33 +443,46 @@ declare function e:introduce-rors($xml as item()) {
 };
 
 declare function e:extract-ror-matches($response as item()) as element()+ {
-  if ((number($response//*:number__of__results) = 0) or not($response//*:items/_[number(*:score[1]) ge 0.8])) 
-    then ()
+  if (number($response//*:number__of__results) = 0) then ()
   else if ($response//*:items/_[*:chosen='true']) then $response//*:items/_[*:chosen='true']
-  else 
-    (for $result in $response//*:items/_[number(*:score[1]) ge 0.8]
-    order by $result/*:score[1] descending
-    return $result)[position() lt 4]
+  (: Assumes the ROR 'query' param is used :)
+  else if (number($response//*:number__of__results) = 1 and $response//*:items/_[not(*:score)])
+      then $response//*:items/_
+  else (for $result in $response//*:items/_[number(*:score[1]) ge 0.8]
+        order by $result/*:score[1] descending
+        return $result)[position() lt 4]
 };
 
 declare function e:generate-ror-institution-wrap($results as item()*, $node as item()) as element(){
   <institution-wrap>{
     for $result at $p in $results
-    let $option := if ($result/*:chosen='true') then 'Chosen option'
-                   else 'Option '||$p
-    let $score := $result/*:score[1]/data()
-    let $name := $result/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()
-    let $cities := string-join($result/*:organization/*:locations//*:name,'; ')
-    let $countries := string-join($result/*:organization/*:locations//*:country__name,'; ')
-    let $ror-id := $result/*:organization/*:id/data()
-    let $comment := comment {$option||': Closeness score = '||$score||' | Name = '||$name||' | Cities = '||$cities||' | Countries = '||$countries}
-    return ('&#xa;',
+    return (
+      if (not($result/*:organization)) then (
+        '&#xa;',
+        <institution-id institution-id-type="ror">{$result/*:id/data()}</institution-id>
+      )
+    else (
+      let $option := if ($result/*:chosen='true') then 'Chosen option'
+                     else 'Option '||$p
+      let $score := if ($result[not(*:chosen='true')]/*:score) 
+                        then 'Closeness score = '||$result/*:score[1]/data()||' | '
+                    else ()
+      let $org := if (not($result/*:organization)) then $result
+                  else $result/*:organization
+      let $name := $org/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()
+      let $cities := string-join($org/*:locations//*:name,'; ')
+      let $countries := string-join($org/*:locations//*:country__name,'; ')
+      let $ror-id := $org/*:id/data()
+      let $comment := comment {$option||': '||$score||'Name = '||$name||' | Cities = '||$cities||' | Countries = '||$countries}
+      return ('&#xa;',
             $comment,
             '&#xa;',
             <institution-id institution-id-type="ror">{$ror-id}</institution-id>
-          ),
+          )
+       )
+     ),
      if ($node/local-name()='aff') then $node/institution[1]
-     else if ($node/local-name='institution') then $node
+     else if ($node/local-name()='institution') then $node
      else if ($node/self::text()) then <institution>{$node}</institution>
      else ()
    }</institution-wrap>
