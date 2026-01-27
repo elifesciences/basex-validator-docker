@@ -408,32 +408,13 @@ declare function e:introduce-rors($xml as item()) {
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
-      return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
-             then ()
-             else (
-              let $inst-wrap := <institution-wrap>{
-                if ($json//*:items/_[*:chosen='true']) then
-                    let $res := $json//*:items/_[*:chosen='true']
-                    return ('&#xa;',
-                            comment {'Chosen option: Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
-                            '&#xa;',
-                    <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>
-                  )
-                else (
-                  for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
-                               order by $y/*:score[1] descending
-                               return $y)[position() lt 4]
-                  return ('&#xa;',
-                    comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
-                    '&#xa;',
-                    <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
-                    '&#xa;'
-                  )
-                ),
-                $aff/institution[1]
-              }</institution-wrap>
-              return replace node $aff/*:institution[1] with $inst-wrap
-             ),
+      let $results := e:extract-ror-matches($json)
+      return if (not(exists($results))) then ()
+      else (
+        let $institution-wrap := e:generate-ror-institution-wrap($results,$aff)
+        return replace node $aff/*:institution[1] with $institution-wrap
+       ),
+       
        for $funding-source in $copy//*:article-meta/*:funding-group//*:funding-source[not(normalize-space(*:named-content[@content-type="funder-id"])!='')]
        let $inst := normalize-space($funding-source/text()[matches(.,'\S')][1])
        let $json := try {
@@ -442,26 +423,49 @@ declare function e:introduce-rors($xml as item()) {
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
-        return if ((number($json//*:number__of__results) = 0) or not($json//*:items/_[number(*:score[1]) ge 0.8]))
-             then ()
-             else (
-               let $new-inst-wrap := <institution-wrap>{
-                for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
-                             order by $y/*:score[1] descending
-                             return $y)[position() lt 4]
-                return ('&#xa;',
-                  comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
-                  '&#xa;',
-                  <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
-                  '&#xa;'
-                ),
-                <institution>{$inst}</institution>,'&#xa;'
-              }</institution-wrap>
-              return replace node $funding-source with <funding-source>{('&#xa;',$new-inst-wrap,'&#xa;')}</funding-source>
-             )
+        let $results := e:extract-ror-matches($json)
+        return if (not(exists($results))) then ()
+        else (
+          let $institution-wrap := e:generate-ror-institution-wrap($results,$inst)
+          return replace node $funding-source with 
+                 <funding-source>{('&#xa;',$institution-wrap,'&#xa;')}</funding-source>
+               )
     )
     return $copy
   return $new-xml
+};
+
+declare function e:extract-ror-matches($response as item()) as element()+ {
+  if ((number($response//*:number__of__results) = 0) or not($response//*:items/_[number(*:score[1]) ge 0.8])) 
+    then ()
+  else if ($response//*:items/_[*:chosen='true']) then $response//*:items/_[*:chosen='true']
+  else 
+    (for $result in $response//*:items/_[number(*:score[1]) ge 0.8]
+    order by $result/*:score[1] descending
+    return $result)[position() lt 4]
+};
+
+declare function e:generate-ror-institution-wrap($results as item()*, $node as item()) as element(){
+  <institution-wrap>{
+    for $result at $p in $results
+    let $option := if ($result/*:chosen='true') then 'Chosen option'
+                   else 'Option '||$p
+    let $score := $result/*:score[1]/data()
+    let $name := $result/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()
+    let $cities := string-join($result/*:organization/*:locations//*:name,'; ')
+    let $countries := string-join($result/*:organization/*:locations//*:country__name,'; ')
+    let $ror-id := $result/*:organization/*:id/data()
+    let $comment := comment {$option||': Closeness score = '||$score||' | Name = '||$name||' | Cities = '||$cities||' | Countries = '||$countries}
+    return ('&#xa;',
+            $comment,
+            '&#xa;',
+            <institution-id institution-id-type="ror">{$ror-id}</institution-id>
+          ),
+     if ($node/local-name()='aff') then $node/institution[1]
+     else if ($node/local-name='institution') then $node
+     else if ($node/self::text()) then <institution>{$node}</institution>
+     else ()
+   }</institution-wrap>
 };
 
 (: XSL :)
