@@ -459,7 +459,8 @@ declare function e:generate-ror-institution-wrap($results as item()*, $node as i
     return (
       if (not($result/*:organization)) then (
         '&#xa;',
-        <institution-id institution-id-type="ror">{$result/*:id/data()}</institution-id>
+        <institution-id institution-id-type="ror">{$result/*:id/data()}</institution-id>,
+        '&#xa;'
       )
     else (
       let $option := if ($result/*:chosen='true') then 'Chosen option'
