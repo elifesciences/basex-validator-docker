@@ -442,7 +442,7 @@ declare function e:introduce-rors($xml as item()) {
   return $new-xml
 };
 
-declare function e:extract-ror-matches($response as item()) as element()+ {
+declare function e:extract-ror-matches($response as item()) as element()* {
   if (number($response//*:number__of__results) = 0) then ()
   else if ($response//*:items/_[*:chosen='true']) then $response//*:items/_[*:chosen='true']
   (: Assumes the ROR 'query' param is used :)
