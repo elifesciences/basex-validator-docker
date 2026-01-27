@@ -401,10 +401,10 @@ declare function e:introduce-rors($xml as item()) {
     copy $copy := $node
     modify(
       for $aff in $copy//*:article-meta//*:aff[not(descendant::*:institution-id[@institution-id-type="ror"]) and *:institution]
-      let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content','city'))],', ')
+      let $display := string-join($aff/node()[not(local-name()=('label','institution-id','institution-wrap'))],'')
       let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display)||'&amp;single_search')}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
@@ -412,14 +412,23 @@ declare function e:introduce-rors($xml as item()) {
              then ()
              else (
               let $inst-wrap := <institution-wrap>{
-                for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
-                             order by $y/*:score[1] descending
-                             return $y)[position() lt 4]
-                return ('&#xa;',
-                  comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
-                  '&#xa;',
-                  <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
-                  '&#xa;'
+                if ($json//*:items/_[*:chosen='true']) then
+                    let $res := $json//*:items/_[*:chosen='true']
+                    return ('&#xa;',
+                            comment {'Chosen option: Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
+                            '&#xa;',
+                    <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>
+                  )
+                else (
+                  for $res at $p in (for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
+                               order by $y/*:score[1] descending
+                               return $y)[position() lt 4]
+                  return ('&#xa;',
+                    comment {'Option '||$p||': Closeness score = '||$res/*:score[1]/data()||' | Name = '||$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()||' | Cities = '||string-join($res/*:organization/*:locations//*:name,'; ')||' | Countries = '||string-join($res/*:organization/*:locations//*:country__name,'; ')},
+                    '&#xa;',
+                    <institution-id institution-id-type="ror">{$res/*:organization/*:id/data()}</institution-id>,
+                    '&#xa;'
+                  )
                 ),
                 $aff/institution[1]
               }</institution-wrap>
