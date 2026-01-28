@@ -482,9 +482,9 @@ declare function e:generate-ror-institution-wrap($results as item()*, $node as i
           )
        )
      ),
-     if ($node/local-name()='aff') then $node/institution[1]
-     else if ($node/local-name()='institution') then $node
-     else if ($node/self::text()) then <institution>{$node}</institution>
+     if ($node instance of text() or $node instance of xs:string) then <institution>{$node}</institution>
+     else if ($node instance of element(institution)) then $node
+     else if ($node instance of element(aff)) then $node/institution[1]
      else ()
    }</institution-wrap>
 };
