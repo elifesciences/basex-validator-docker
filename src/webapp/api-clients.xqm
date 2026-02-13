@@ -1,5 +1,5 @@
-module namespace api = 'http://elifesciences.org/modules/api-clients';
-import module namespace util = 'http://elifesciences.org/modules/utilities';
+module namespace api = 'api-clients';
+import module namespace util = 'utilities' at 'utilities.xqm';
 
 declare function api:get-glencoe($doi){
   try {

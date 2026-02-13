@@ -1,7 +1,7 @@
-module namespace html = 'http://elifesciences.org/modules/html-generator';
+module namespace html = 'html-generator';
 import module namespace rest = "http://exquery.org/ns/restxq";
-import module namespace dtd = 'http://elifesciences.org/modules/dtd-validator';
-import module namespace svrl = 'http://elifesciences.org/modules/svrl-converter';
+import module namespace dtd = 'dtd-validator' at 'dtd-validator.xqm';
+import module namespace svrl = 'svrl-converter' at 'svrl-converter.xqm';
 
 (: HTML pages:)
 

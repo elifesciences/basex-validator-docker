@@ -1,10 +1,8 @@
 module namespace e = 'http://elifesciences.org/modules/validate';
-import module namespace session = "http://basex.org/modules/session";
 import module namespace rest = "http://exquery.org/ns/restxq";
-import module namespace svrl = 'http://elifesciences.org/modules/svrl-converter';
-import module namespace api = 'http://elifesciences.org/modules/api-clients';
-import module namespace util = 'http://elifesciences.org/modules/utilities';
-declare namespace svrl-ns = "http://purl.oclc.org/dsdl/svrl";
+import module namespace svrl = 'svrl-converter' at 'svrl-converter.xqm';
+import module namespace api = 'api-clients' at 'api-clients.xqm';
+import module namespace util = 'utilities' at 'utilities.xqm';
 
 (: Schematron :)
 

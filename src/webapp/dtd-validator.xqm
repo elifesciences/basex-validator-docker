@@ -1,4 +1,4 @@
-module namespace dtd = 'http://elifesciences.org/modules/dtd-validator';
+module namespace dtd = 'dtd-validator';
 import module namespace rest = "http://exquery.org/ns/restxq";
 
 (: DTD :)

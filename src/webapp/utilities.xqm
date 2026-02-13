@@ -1,5 +1,5 @@
-module namespace util = 'http://elifesciences.org/modules/utilities';
-import module namespace api = 'http://elifesciences.org/modules/api-clients';
+module namespace util = 'utilities';
+import module namespace api = 'api-clients' at 'api-clients.xqm';
 
 declare function util:json-escape($string){
   normalize-space(replace(replace($string,'\\','\\\\'),'"','\\"'))

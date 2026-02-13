@@ -1,7 +1,6 @@
-module namespace svrl = 'http://elifesciences.org/modules/svrl-converter';
-import module namespace api = 'http://elifesciences.org/modules/api-clients';
-import module namespace util = 'http://elifesciences.org/modules/utilities';
-declare namespace svrl-ns = "http://purl.oclc.org/dsdl/svrl";
+module namespace svrl = 'svrl-converter';
+import module namespace api = 'api-clients' at 'api-clients.xqm';
+import module namespace util = 'utilities' at 'utilities.xqm';
 
 declare function svrl:svrl2json($xml,$svrl)
 { 
