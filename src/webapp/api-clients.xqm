@@ -178,7 +178,7 @@ declare function api:get-ror-rows($xml) as element(tr)* {
       let $display := string-join($aff/descendant::*[not(local-name()=('label','institution-id','institution-wrap','named-content'))],', ')
       let $json := try {
                  http:send-request(
-                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display))}" timeout='2'>
+                 <http:request method='get' href="{('https://api.ror.org/v2/organizations?affiliation='||web:encode-url($display)||'&amp;single_search')}" timeout='2'>
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
