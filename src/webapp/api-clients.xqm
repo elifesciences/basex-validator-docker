@@ -182,15 +182,9 @@ declare function api:get-ror-rows($xml) as element(tr)* {
                    <http:header name="Client-Id" value="{$ror-client-id}"/>
                  </http:request>)//*:json}
                catch * {<json><number__of__results>0</number__of__results></json>}
-      let $results := for $res in (
-                                for $y in $json//*:items/_[number(*:score[1]) ge 0.8]
-                                order by $y/*:score[1] descending
-                                return $y)[position() lt 4]
-                      let $a := <a href="{$res/*:organization/*:id}" target="_blank">{$res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()}</a>
-                      return ($a,' (Closeness score '||$res/*:score[1]||')')
-      let $message := if ((number($json//*:number__of__results) gt 0) and $json//*:items/_[number(*:score[1]) ge 0.8]) 
-                         then ' However possible ROR IDs are: {'||$results||'}' 
-                      else ' No (confident) ROR ID matches have been found.'
+      let $results := api:extract-ror-matches($json)
+      let $message := if ($json//*:number__of__results[@flag="error"]) then ' There was an error fetching possible matches from the ROR API.'
+                      else api:generate-ror-td-message($results)
       return <wrap>
                <td class="align-middle"><input class="unticked" type="checkbox" value=""/></td>
                <td>Warning</td>
@@ -317,4 +311,21 @@ declare function api:generate-ror-institution-wrap($results as item()*, $node as
      else if ($node instance of element(aff)) then $node/institution[1]
      else ()
    }</institution-wrap>
+};
+
+declare function api:generate-ror-td-message($results as item()*) as item()* {
+    if (not(exists($results))) then (' No (confident) ROR ID matches have been found.')
+    else (
+        let $result-display := 
+                for $res in $results
+                let $id := if ($res/*:organization) then $res/*:organization/*:id
+                           else $res/*:id
+                let $name := if ($res/*:organization) then $res/*:organization/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()
+                             else $res/*:names/_[*:types/*='ror_display'][1]/*:value[1]/data()
+                let $a := <a href="{$id}" target="_blank">{$name}</a>
+                let $score := if ($res[not(*:chosen='true')]/*:score) then '(Closeness score '||$res/*:score[1]||')'
+                              else '(Chosen match)' 
+                return ($a,' ',$score,' ')
+        return (' However possible ROR IDs are: ',$result-display)
+    ) 
 };
