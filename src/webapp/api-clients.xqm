@@ -266,8 +266,8 @@ declare function api:introduce-rors($xml as item()) {
   return $new-xml
 };
 
-declare function api:extract-ror-matches($response as item()) as element()* {
-  if (number($response//*:number__of__results) = 0) then ()
+declare function api:extract-ror-matches($response as item()?) as element()* {
+  if (empty($response) or number($response//*:number__of__results) = 0) then ()
   else if ($response//*:items/_[*:chosen='true']) then $response//*:items/_[*:chosen='true']
   (: Assumes the ROR 'query' param is used :)
   else if (number($response//*:number__of__results) = 1 and $response//*:items/_[not(*:score)])
