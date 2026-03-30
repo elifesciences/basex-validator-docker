@@ -65,6 +65,7 @@ function addEditorLines(callback) {
     let xpath = getCellValue(tr,3);
     if (xpath) {
       if (xpath.startsWith("/")) {
+        xpath = xpath.includes('Q{}') || xpath.includes('Q{') ? resolveQNames(xpath) : xpath;
         xpath = xpath.includes('namespace-uri()') ? changeXpathType(xpath) : xpath;
         let node = xml.evaluate(xpath,xml,nsResolver,9);
         let line = (node.singleNodeValue != null) ? getEditorLine(node) : null;
@@ -527,6 +528,18 @@ function changeXpathToken(token) {
   }
   let tokenArray = token.split("[")
   return (ns + ':' + tokenArray[0] + "[" + tokenArray[2])
+}
+
+// handles Q{} notation from SchXslt
+function resolveQNames(xpath) {
+  return xpath.replace(/Q\{([^}]*)\}([^\s,\[\]\/\*:]+)/g, (_, uri, local) => {
+    if (!uri) return local;
+    for (let prefix in namespaces) {
+      if (namespaces[prefix] === uri) return `${prefix}:${local}`;
+    }
+    console.log(`No prefix found for namespace URI: ${uri}`);
+    return local;
+  });
 }
 
 /* splits large xml snippets into smaller sections 
