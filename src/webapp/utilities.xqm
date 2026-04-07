@@ -7,6 +7,7 @@ declare function util:json-escape($string){
 
 declare function util:get-message($node){
   if ($node[@see]) then util:json-escape((data($node)||' '||$node/@see))
+  else if ($node/*:text[@see]) then util:json-escape((data($node)||' '||$node/*:text[1]/@see))
   else util:json-escape(data($node))
 };
 

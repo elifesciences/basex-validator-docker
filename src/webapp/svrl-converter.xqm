@@ -193,6 +193,7 @@ declare function svrl:svrl2result-video($xml,$svrl) as element(div)*
 declare function svrl:get-table-rows($svrl) as element(tr)* {
   for $x at $p in $svrl//*[@role=('error','warn','warning','info')]
     let $id-content := if ($x/@see) then <a href="{$x/@see/string()}" target="_blank">{$x/@id/string()}</a>
+                       else if ($x/*:text/@see) then <a href="{$x/*:text[1]/@see/string()}" target="_blank">{$x/@id/string()}</a>
                   else $x/@id/string()
     let $type := (upper-case(substring($x/@role,1,1))||substring($x/@role,2))
     let $class := if ($p mod 2 = 0) then ($x/@role||' even') else ($x/@role||' odd')
