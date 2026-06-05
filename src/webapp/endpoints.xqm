@@ -76,7 +76,7 @@ declare
   %rest:POST("{$xml}")
 function e:transform-preprint($xml as item())
 {
-  let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
+  let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.4 20241031//EN" "JATS-archivearticle1-4-mathml3.dtd">'
   let $options := map{'indent':'no',
                     'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-changes.xsl')
@@ -98,7 +98,11 @@ declare
   %rest:POST("{$xml}")
 function e:transform-preprint-silent($xml as item())
 {
-  let $doctype := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
+  let $dtd-1.3 := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.3 20210610//EN" "JATS-archivearticle1-mathml3.dtd">'
+  let $dtd-1.4 := '<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.4 20241031//EN" "JATS-archivearticle1-4-mathml3.dtd">'
+  
+  let $doctype := if ($xml//*:article/@dtd-version='1.3') then $dtd-1.3
+                  else $dtd-1.4
   let $options := map{'indent':'no',
                     'omit-xml-declaration':'yes'}
   let $xsl := doc('./schematron/preprint-silent-changes.xsl')
