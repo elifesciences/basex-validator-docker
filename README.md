@@ -1,25 +1,43 @@
 # BaseX Validator Docker
 
-A docker contatiner that can be used to validate XML against jats dtds and eLife's 'pre' and 'final' schematron files built upon
-BaseX.
+A docker container that validates XML against the JATS DTDs and eLife's schematron files, built on BaseX.
 
 ## Getting Started
 
-You can now build the container locally using the following command, which will build a new container using the latest
-version of the schematron files from https://github.com/elifesciences/eLife-JATS-schematron
+The image is built on the official BaseX image ([`ghcr.io/basexdb/basex`](https://github.com/BaseXdb/basex/pkgs/container/basex), currently BaseX 13.1 on Java 25)
+and serves the validator over HTTP on port **8984**.
+
+The schematron files come from the [eLife-JATS-schematron](https://github.com/elifesciences/eLife-JATS-schematron) git submodule.
+
+### Running the service
+
+There are two ways to run it. Use one or the other: both publish port 8984, so stop one before starting the other.
+
+**Option 1: docker compose** (recommended; this is what CI uses)
+
+```
+docker compose up --build --wait   # build, start, and wait for the healthcheck to pass
+docker compose down                # stop
+```
+
+**Option 2: docker**
 
 ```
 docker build . -t basex-validator:local
-docker run --rm --memory="512m" -p 8984:8984 basex-validator:local
+docker run --rm --memory="2g" -p 8984:8984 basex-validator:local
 ```
 
-You can then interact with the service on port 8984 for example using cURL, for example...
+Stop it with `Ctrl+C`. The `docker build` step is required: `docker run` uses the `basex-validator:local` tag, which docker compose does not create.
+
+### Using the service
+
+Open http://localhost:8984/ in a browser to upload a file and view results, or use the API, for example with cURL:
 
 ```
 curl -F xml=@test/xml/elife45905.xml http://localhost:8984/schematron/pre
 curl -F xml=@test/xml/elife45905.xml http://localhost:8984/schematron/final
 curl -F xml=@test/xml/elife45905.xml http://localhost:8984/dtd
-curl -F xml=@xml/elife45905.xml -F "type=publishing" http://localhost:8984/dtd
+curl -F xml=@test/xml/elife45905.xml -F "type=publishing" http://localhost:8984/dtd
 ```
 
 ## dtd
@@ -53,10 +71,10 @@ Invalid
 
 `type` is optional param specifying which DTD flavor to validate. By default (if no `type` is specified) it is `archiving`.
 
-jats dtds are included in `webapp/dtds`.
-To add (or replace) dtds, add the files in the correct folder depending on its version and flavour, and update `webapp/dtds/catalogue.xml` with the version/filename (ensuring to include `.dtd`).
+JATS DTDs are included in `src/webapp/dtds`.
+To add (or replace) DTDs, add the files in the correct folder for the version and flavour, and update `src/webapp/dtds/catalogue.xml` with the version/filename (including the `.dtd` extension).
 
-dtd version is derived from the `article/@dtd-version` attribute value in the xml file supplied. If there is no such attribute, then `1.3` is the default version.
+The DTD version is taken from the `article/@dtd-version` attribute in the XML supplied. If there is no such attribute, version `1.4` is used.
 
 ## Schematron
 Invalid

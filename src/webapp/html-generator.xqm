@@ -37,7 +37,7 @@ as element(html)
                        </div>
                       </div>
                       <div id="editor">
-                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':true()})}</textarea>
                       </div>
                       <div id="resizer"></div>
                       <div id="results">
@@ -84,7 +84,7 @@ as element(html)
                        </div>
                       </div>
                       <div id="editor">
-                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':'yes'})}</textarea>
+                        <textarea id="code">{serialize($xml,map{'method':'xml','indent':true()})}</textarea>
                       </div>
                       <div id="resizer"></div>
                       <div id="results">

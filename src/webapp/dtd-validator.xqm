@@ -88,7 +88,7 @@ declare function dtd:dtd2json($report){
 declare function dtd:dtd2result($xml) as element(div) {
   let $version := dtd:get-version($xml)
   let $dtd := dtd:get-dtd($version,"archiving")
-  let $report := validate:dtd-report($xml,$dtd)
+  let $report := validate:dtd-report(serialize($xml,map{'indent':true()}),$dtd)
   let $status := $report//*:status/text()
   let $image-name := if ($status="valid") then ("valid") else 'error'
   let $table := if ($status="valid") then ()
@@ -96,7 +96,7 @@ declare function dtd:dtd2result($xml) as element(div) {
                   for $x at $p in $report//*:message[@level="Error"]
                   let $class := if ($p mod 2 = 0) then ('error even') else ('error odd')
                   return 
-                  <tr class="{$class}" data-editor-line="{number($x/@line/string()) - 2}">
+                  <tr class="{$class}" data-editor-line="{number($x/@line/string()) - 1}">
                     <td class="align-middle">
                       <input class="unticked" type="checkbox" value=""/>
                     </td>
