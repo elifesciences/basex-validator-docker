@@ -6,7 +6,7 @@ services:
     ports:
       - "8984:8984"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://basex-validator:8984"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8984/"]
       interval: 10s
       timeout: 2s
       retries: 5

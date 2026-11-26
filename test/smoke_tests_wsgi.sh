@@ -1,5 +1,5 @@
 #!/bin/bash
-URL=http://localhost:8984/
+URL=http://localhost:8984
 
 echo -n "$0: Testing pre..."
 PRE_HTTP_RESPONSE_CODE=$(curl --write-out %{http_code} --no-expect --silent --output /dev/null -F xml=@./xml/elife45905.xml $URL/schematron/pre)
