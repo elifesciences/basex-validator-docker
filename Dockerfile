@@ -8,7 +8,7 @@ COPY --chown=basex src/.basex /opt/basex/.basex
 COPY --chown=basex src/repo /opt/basex/repo
 COPY --chown=basex src/webapp /opt/basex/webapp
 COPY --chown=basex eLife-JATS-schematron/src /opt/basex/webapp/schematron
-COPY --chown=basex src/saxon9he.jar /opt/basex/lib/custom/saxon9he.jar
+COPY --chown=basex src/lib/*.jar /opt/basex/lib/custom/
 
 
 ENV BASEX_JVM="-Xmx2g \
